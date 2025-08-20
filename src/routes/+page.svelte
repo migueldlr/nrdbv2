@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { store } from '$lib/store.svelte';
+	import type { Card } from '$lib/types';
+	import { getContext } from 'svelte';
+
+	const store = getContext<{ allCards: Card[] }>('store');
 </script>
 
-{#if store.allCards.length === 0}
-	<p>Loading all cards...</p>
-{:else}
-	<ul>
-		{#each store.allCards as card}
-			<li>
-				{card.attributes.title}
-			</li>
-		{/each}
-	</ul>
-{/if}
+<ul>
+	{#each store.allCards as card}
+		<li>
+			{card.attributes.title}
+		</li>
+	{/each}
+</ul>

@@ -2,10 +2,17 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { LOCAL_STORAGE_ALL_CARDS_KEY, NRDB_API_URL } from '$lib/utils';
-	import { store } from '$lib/store.svelte';
 	import lz from 'lz-string';
+	import type { Card } from '$lib/types';
+	import { setContext } from 'svelte';
+
+	const store = $state({
+		allCards: [] as Card[]
+	});
+	setContext('store', store);
 
 	let { children, data } = $props();
+
 	store.allCards = data.cards;
 
 	const fetchAllCards = async () => {
