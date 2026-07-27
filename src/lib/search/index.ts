@@ -9,12 +9,12 @@ import type { UnifiedCardRow } from '$lib/sqlite.types';
 // Card search runs in four steps: interpret -> translate -> run -> adapt.
 export async function searchCards(
 	input: string,
-	limit = 5
+	options: { limit?: number } = {}
 ): Promise<{ cards: Card[]; error: Error | null }> {
 	// 1. interpret: natural-language words -> NRDB search expression
 	const expression = interpretSearch(input);
 	// 2. translate: expression -> SQL
-	const { sql: text, params, error } = translateToQuery(expression, limit);
+	const { sql: text, params, error } = translateToQuery(expression, options);
 	if (error || !text) {
 		return { cards: [], error };
 	}
