@@ -1,3 +1,4 @@
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config';
 
@@ -39,6 +40,21 @@ export default mergeConfig(
 							'src/**/*.svelte.{test,spec}.{js,ts}',
 							'src/**/*.browser.{test,spec}.{js,ts}'
 						]
+					}
+				},
+				{
+					extends: './vite.config.ts',
+					plugins: [storybookTest({ configDir: '.storybook' })],
+					test: {
+						name: 'storybook',
+						environment: 'browser',
+						browser: {
+							enabled: true,
+							headless: true,
+							provider: 'playwright',
+							instances: [{ browser: 'chromium' }]
+						},
+						setupFiles: ['./.storybook/vitest.setup.ts']
 					}
 				}
 			]

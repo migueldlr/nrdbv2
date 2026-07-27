@@ -23,7 +23,7 @@
 		<div>
 			<header>
 				<Icon name={group.type} />
-				<h2>{card_types[group.type]} ({count[group.type]})</h2>
+				<h4>{card_types[group.type]} ({count[group.type]})</h4>
 			</header>
 			<article>
 				<ul>

@@ -183,8 +183,8 @@
         padding: 0.5rem;
         padding-left: 2.5rem;
         border: 1px solid #ccc;
-        font-size: 1rem;
-        line-height: 1.5;
+        font-size: var(--font-size-base);
+        line-height: var(--leading-body);
     }
 
     .search-dropdown {

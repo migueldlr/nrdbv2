@@ -20,10 +20,10 @@
     {@render children?.()}
     <div class="meta__content">
         {#if title}
-            <h3>
+            <p class="meta__title">
                 {#if quantity}&times;{quantity}{/if}
                 {card.attributes.title}
-            </h3>
+            </p>
         {/if}
         {#if quantity}
             <Influence
@@ -49,9 +49,11 @@
     .meta__content {
         gap: 0.25rem;
 
-        & h3 {
+        & .meta__title {
             margin: unset;
-            font-size: 1.125rem;
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            line-height: var(--leading-tight);
         }
     }
 </style>

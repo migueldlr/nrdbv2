@@ -70,7 +70,7 @@
     }
 
     .illustrator-card__heading p {
-        opacity: 0.75;
+        color: var(--text-muted);
     }
 
     .illustrator-card__printings {

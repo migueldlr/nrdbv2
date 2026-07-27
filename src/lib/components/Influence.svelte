@@ -41,7 +41,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
-		font-size: 1rem;
+		font-size: var(--font-size-base);
 	}
 
 	.influence__pips {
