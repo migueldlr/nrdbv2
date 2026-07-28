@@ -1,4 +1,5 @@
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config';
 
@@ -23,7 +24,6 @@ export default mergeConfig(
 					extends: './vite.config.ts',
 					test: {
 						name: 'client',
-						environment: 'browser',
 						browser: {
 							enabled: true,
 							provider: 'playwright',
@@ -55,10 +55,14 @@ export default mergeConfig(
 				},
 				{
 					extends: './vite.config.ts',
-					plugins: [storybookTest({ configDir: '.storybook' })],
+					plugins: [
+						svelte({
+							include: [/\.svelte$/, /node_modules\/@storybook\/.*\.svelte$/]
+						}),
+						storybookTest({ configDir: '.storybook' })
+					],
 					test: {
 						name: 'storybook',
-						environment: 'browser',
 						browser: {
 							enabled: true,
 							headless: true,
