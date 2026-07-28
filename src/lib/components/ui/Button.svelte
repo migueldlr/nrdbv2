@@ -64,25 +64,20 @@
         color: var(--text);
         text-decoration: none;
         border-radius: 0.25rem;
+        cursor: pointer;
+
+        &[disabled] {
+            cursor: not-allowed;
+        }
 
         &.button--sm {
             padding: 0.5rem 0.75rem;
-        }
-
-        /*&.button--primary {
-
-        }*/
-
-        &.button--secondary {
         }
 
         &.button--ghost {
             border-color: var(--border);
             opacity: 0.5;
             background: transparent;
-        }
-
-        &.button--danger {
         }
     }
 </style>

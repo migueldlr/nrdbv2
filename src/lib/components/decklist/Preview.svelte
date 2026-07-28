@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Decklist, Card as TCard } from "$lib/types";
+    import type { Decklist, FactionIds } from "$lib/types";
     import Icon from "$lib/components/Icon.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -19,12 +19,12 @@
         <Icon
             name={decklist.attributes.faction_id}
             size="md"
-            theme={decklist.attributes.faction_id}
+            theme={decklist.attributes.faction_id as FactionIds}
         />
     </span>
 
     <div class="preview-card__content">
-        <p class="preview-card__title">{decklist.attributes.name}</p>
+        <h3 class="preview-card__title">{decklist.attributes.name}</h3>
         <p class="preview-card__meta">
             {decklist.attributes.user_id}
             <!-- {#if decklist.attributes?.user_rating}
@@ -62,17 +62,9 @@
     }
 
     .preview-card__title {
-        font-family:
-            Inter,
-            system-ui,
-            -apple-system,
-            "Segoe UI",
-            Roboto,
-            "Helvetica Neue",
-            Arial;
-        font-weight: 600;
-        font-size: 16px;
-        line-height: 1;
+        font-weight: var(--font-weight-semibold);
+        font-size: var(--font-size-base);
+        line-height: var(--leading-tight);
         margin: 0;
         color: var(--text, #fff);
         white-space: nowrap;

@@ -14,10 +14,11 @@
         overwriteDatabaseFile,
         get_current_sqlite_url,
         set_current_sqlite_url,
-        check_sqlite_db_exists,
+        check_sqlite_db_populated,
         download_and_extract_sqlite,
     } from "$lib/sqlite";
     import { fetch_published_databases } from "$lib/utils";
+    import { prepareSearch } from "$lib/search";
     import {
         CURRENT_SQLITE_URL_FILENAME,
         NRDB_SQLITE_NAME,
@@ -43,10 +44,10 @@
 
     onMount(async () => {
         try {
-            const [sqlite_url, storedUrl, dbExists] = await Promise.all([
+            const [sqlite_url, storedUrl, dbPopulated] = await Promise.all([
                 fetch_published_databases(),
                 get_current_sqlite_url(),
-                check_sqlite_db_exists(),
+                check_sqlite_db_populated(),
             ]);
 
             if (sqlite_url === null) {
@@ -61,8 +62,10 @@
             if (storedUrl !== sqlite_url) {
                 console.log("[SQLITE] Database URL changed. Needs update.");
                 needsDownload = true;
-            } else if (!dbExists) {
-                console.log("[SQLITE] Database not found in OPFS. Needs download.");
+            } else if (!dbPopulated) {
+                console.log(
+                    "[SQLITE] Database in OPFS is missing or empty. Needs download.",
+                );
                 needsDownload = true;
             } else {
                 console.log(
@@ -85,7 +88,14 @@
                 dbReady = true;
             }
 
-            db_ready.set(dbReady);
+            // Populate the search vocabulary before marking ready, so searches never run
+            // against empty subtype/set/cycle maps. A vocab failure is logged but still
+            // marks ready (search degrades to the static vocabulary rather than never running).
+            if (dbReady) {
+                await prepareSearch(() => db_ready.set(true));
+            } else {
+                db_ready.set(false);
+            }
 
             // 30 days
             document.cookie = `${NRDB_CACHE_COOKIE}=1; max-age=2592000; path=/`;

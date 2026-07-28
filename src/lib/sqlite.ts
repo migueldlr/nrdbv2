@@ -1,7 +1,9 @@
 import { SQLocal } from 'sqlocal';
 import { NRDB_SQLITE_NAME, CURRENT_SQLITE_URL_FILENAME } from '$lib/constants';
 
-export const { sql, overwriteDatabaseFile } = new SQLocal(NRDB_SQLITE_NAME);
+export const { sql, overwriteDatabaseFile, deleteDatabaseFile } = new SQLocal(NRDB_SQLITE_NAME);
+
+const REQUIRED_TABLES = ['unified_cards', 'card_sets', 'card_cycles', 'card_subtypes'];
 
 export const get_current_sqlite_url = async (): Promise<string | null> => {
 	try {
@@ -25,17 +27,41 @@ export const set_current_sqlite_url = async (url: string): Promise<void> => {
 	await writable.close();
 };
 
-export const check_sqlite_db_exists = async (): Promise<boolean> => {
+export const clear_current_sqlite_url = async (): Promise<void> => {
+	const root = await navigator.storage.getDirectory();
 	try {
-		const root = await navigator.storage.getDirectory();
-		await root.getFileHandle(NRDB_SQLITE_NAME);
-		return true;
+		await root.removeEntry(CURRENT_SQLITE_URL_FILENAME);
 	} catch (error) {
-		if (error instanceof DOMException && error.name === 'NotFoundError') {
-			return false;
+		if (!(error instanceof DOMException && error.name === 'NotFoundError')) {
+			throw error;
 		}
-		throw error;
 	}
+};
+
+export const check_sqlite_db_populated = async (): Promise<boolean> => {
+	try {
+		const placeholders = REQUIRED_TABLES.map(() => '?').join(', ');
+		const rows = await sql(
+			`SELECT name FROM sqlite_master WHERE type = 'table' AND name IN (${placeholders})`,
+			...REQUIRED_TABLES
+		);
+		return rows.length === REQUIRED_TABLES.length;
+	} catch (error) {
+		console.error('[SQLITE] Failed to inspect the local database schema:', error);
+		return false;
+	}
+};
+
+export const reset_opfs_data = async (): Promise<void> => {
+	try {
+		await deleteDatabaseFile();
+		await clear_current_sqlite_url();
+		console.info('[SQLITE] OPFS database and version marker removed');
+	} catch (error) {
+		console.error('[SQLITE] Failed to reset OPFS data:', error);
+	}
+
+	window.location.reload();
 };
 
 export const download_and_extract_sqlite = async (sqlite_url: string): Promise<void> => {
