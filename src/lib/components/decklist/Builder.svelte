@@ -485,11 +485,11 @@
     }
 
     .builder__empty {
-        opacity: 0.6;
+        color: var(--text-muted);
     }
 
     .builder__label {
-        font-weight: 600;
+        font-weight: var(--font-weight-semibold);
     }
 
     .builder__input {
@@ -570,7 +570,7 @@
     }
 
     .builder__notes-preview {
-        opacity: 0.7;
+        color: var(--text-muted);
     }
 
     @media (width <= 1024px) {

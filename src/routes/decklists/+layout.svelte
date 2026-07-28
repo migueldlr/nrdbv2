@@ -45,11 +45,17 @@
 
 <Container class="wrapper">
     <aside>
-        {#each categories as category (category.path)}
-            <a href={localizeHref(`/decklists/${category.path}`)}>
-                <h3>{category.title}</h3>
-            </a>
-        {/each}
+        <nav>
+            <ul>
+                {#each categories as category (category.path)}
+                    <li>
+                        <a href={localizeHref(`/decklists/${category.path}`)}>
+                            {category.title}
+                        </a>
+                    </li>
+                {/each}
+            </ul>
+        </nav>
     </aside>
 
     <main>
@@ -63,5 +69,24 @@
         display: grid;
         gap: 2rem;
         grid-template-columns: 1fr 3fr;
+    }
+
+    aside ul {
+        list-style: none;
+        margin: unset;
+        padding: unset;
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    aside a {
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        line-height: var(--leading-tight);
+        text-decoration: none;
+    }
+
+    aside a:hover {
+        text-decoration: underline;
     }
 </style>

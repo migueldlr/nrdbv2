@@ -24,7 +24,7 @@
     </span>
 
     <div class="preview-card__content">
-        <p class="preview-card__title">{decklist.attributes.name}</p>
+        <h3 class="preview-card__title">{decklist.attributes.name}</h3>
         <p class="preview-card__meta">
             {decklist.attributes.user_id}
             <!-- {#if decklist.attributes?.user_rating}
@@ -62,17 +62,9 @@
     }
 
     .preview-card__title {
-        font-family:
-            Inter,
-            system-ui,
-            -apple-system,
-            "Segoe UI",
-            Roboto,
-            "Helvetica Neue",
-            Arial;
-        font-weight: 600;
-        font-size: 16px;
-        line-height: 1;
+        font-weight: var(--font-weight-semibold);
+        font-size: var(--font-size-base);
+        line-height: var(--leading-tight);
         margin: 0;
         color: var(--text, #fff);
         white-space: nowrap;
