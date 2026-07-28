@@ -7,7 +7,7 @@ export interface CardQuery {
 }
 
 // Translate an NRDB search expression into SQL.
-export function translateToQuery(query: string, limit = 5): CardQuery {
+export function translateToQuery(query: string, { limit }: { limit?: number } = {}): CardQuery {
 	if (!query.trim()) {
 		return { sql: null, params: [], error: null };
 	}
@@ -29,6 +29,10 @@ export function translateToQuery(query: string, limit = 5): CardQuery {
 
 	const joins = builder.left_joins.join(' ');
 	const from = joins ? `unified_cards ${joins}` : 'unified_cards';
-	const text = `SELECT * FROM ${from} WHERE ${builder.where} ORDER BY title ASC LIMIT ?`;
-	return { sql: text, params: [...builder.where_values, limit], error: null };
+	const text = `SELECT * FROM ${from} WHERE ${builder.where} ORDER BY title ASC${
+		limit === undefined ? '' : ' LIMIT ?'
+	}`;
+	const params =
+		limit === undefined ? [...builder.where_values] : [...builder.where_values, limit];
+	return { sql: text, params, error: null };
 }

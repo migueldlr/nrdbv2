@@ -84,7 +84,7 @@
                 <td>
                     <a
                         href={localizeHref(
-                            `/decklists/search?=t:${card.attributes.card_type_id}`,
+                            `/search?q=${encodeURIComponent(`t:${card.attributes.card_type_id}`)}`,
                         )}
                         class="table-cell"
                     >

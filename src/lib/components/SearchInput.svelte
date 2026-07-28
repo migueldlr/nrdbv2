@@ -2,12 +2,13 @@
     import { search_query, db_ready } from "$lib/store";
     import CardImage from "$lib/components/card/CardImage.svelte";
     import DecklistSuggestions from "$lib/components/DecklistSuggestions.svelte";
-    import { afterNavigate } from "$app/navigation";
+    import { afterNavigate, goto } from "$app/navigation";
     import { localizeHref } from "$lib/paraglide/runtime";
     import { onMount } from "svelte";
     import Icon from "./Icon.svelte";
     import type { Card } from "$lib/api.types";
     import { searchCards } from "$lib/search";
+    import { SEARCH_PREVIEW_LIMIT } from "$lib/constants";
 
     let search_input: HTMLInputElement | null = null;
     let is_open = $state(false);
@@ -27,7 +28,9 @@
 
         (async () => {
             try {
-                const { cards, error } = await searchCards(query);
+                const { cards, error } = await searchCards(query, {
+                    limit: SEARCH_PREVIEW_LIMIT,
+                });
 
                 if (request_id !== search_request_id) {
                     return;
@@ -54,6 +57,23 @@
     afterNavigate(() => {
         is_open = false;
     });
+
+    const results_href = (query: string) =>
+        localizeHref(`/search?q=${encodeURIComponent(query)}`);
+
+    const submit = (event: SubmitEvent) => {
+        event.preventDefault();
+
+        const query = $search_query.trim();
+
+        if (!query) {
+            return;
+        }
+
+        is_open = false;
+        search_input?.blur();
+        goto(results_href(query));
+    };
 
     onMount(() => {
         const on_key_down = (e: KeyboardEvent) => {
@@ -103,11 +123,18 @@
 </script>
 
 <div class="search-input-root">
-    <span class="search-input-container">
+    <form
+        class="search-input-container"
+        role="search"
+        method="GET"
+        action={localizeHref("/search")}
+        onsubmit={submit}
+    >
         <Icon name="subroutine" size="md" class="search-icon" />
         <input
             bind:this={search_input}
             type="text"
+            name="q"
             placeholder="Search"
             bind:value={$search_query}
             onfocus={() => (is_open = true)}
@@ -122,7 +149,7 @@
                 }
             }}
         />
-    </span>
+    </form>
     {#if is_open && $search_query.length > 0}
         <div class="search-dropdown" bind:this={dropdown_element}>
             <h2>Cards</h2>
@@ -139,6 +166,11 @@
                     </div>
                 {/each}
             </div>
+            {#if filtered_cards.length > 0}
+                <a class="search-all" href={results_href($search_query.trim())}>
+                    View all results
+                </a>
+            {/if}
             <DecklistSuggestions firstCard={filtered_cards[0]} />
         </div>
     {/if}
@@ -166,6 +198,7 @@
         display: flex;
         flex-direction: row;
         gap: 1rem;
+        margin: unset;
         position: relative;
         z-index: 30;
     }
@@ -212,5 +245,10 @@
         max-width: 200px;
         display: block;
         flex: 0 0 auto;
+    }
+
+    .search-all {
+        display: inline-block;
+        padding: 0.5rem;
     }
 </style>
