@@ -179,7 +179,6 @@ formats.length: {formats.length}
 
     h2 {
         text-transform: capitalize;
-        font-size: 1.75rem;
         margin-bottom: 1rem;
     }
 
@@ -190,7 +189,6 @@ formats.length: {formats.length}
     }
 
     h3 {
-        font-size: 1.25rem;
         margin-bottom: 0.75rem;
         display: flex;
         align-items: baseline;
@@ -198,9 +196,9 @@ formats.length: {formats.length}
     }
 
     .date {
-        font-size: 0.875rem;
-        font-weight: normal;
-        opacity: 0.6;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-normal);
+        color: var(--text-muted);
     }
 
     .sides {
@@ -210,11 +208,11 @@ formats.length: {formats.length}
     }
 
     h4 {
-        font-size: 1rem;
-        font-weight: bold;
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-bold);
         margin-bottom: 0.5rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: var(--tracking-caps);
     }
 
     .verdict-group {
@@ -222,10 +220,9 @@ formats.length: {formats.length}
     }
 
     h5 {
-        font-size: 0.875rem;
-        font-weight: 600;
+        font-size: var(--font-size-sm);
         margin-bottom: 0.25rem;
-        opacity: 0.75;
+        color: var(--text-muted);
     }
 
     .card-list {

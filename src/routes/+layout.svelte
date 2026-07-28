@@ -14,7 +14,7 @@
         overwriteDatabaseFile,
         get_current_sqlite_url,
         set_current_sqlite_url,
-        check_sqlite_db_exists,
+        check_sqlite_db_populated,
         download_and_extract_sqlite,
     } from "$lib/sqlite";
     import { fetch_published_databases } from "$lib/utils";
@@ -44,10 +44,10 @@
 
     onMount(async () => {
         try {
-            const [sqlite_url, storedUrl, dbExists] = await Promise.all([
+            const [sqlite_url, storedUrl, dbPopulated] = await Promise.all([
                 fetch_published_databases(),
                 get_current_sqlite_url(),
-                check_sqlite_db_exists(),
+                check_sqlite_db_populated(),
             ]);
 
             if (sqlite_url === null) {
@@ -62,8 +62,10 @@
             if (storedUrl !== sqlite_url) {
                 console.log("[SQLITE] Database URL changed. Needs update.");
                 needsDownload = true;
-            } else if (!dbExists) {
-                console.log("[SQLITE] Database not found in OPFS. Needs download.");
+            } else if (!dbPopulated) {
+                console.log(
+                    "[SQLITE] Database in OPFS is missing or empty. Needs download.",
+                );
                 needsDownload = true;
             } else {
                 console.log(

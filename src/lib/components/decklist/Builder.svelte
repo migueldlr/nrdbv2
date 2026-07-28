@@ -59,6 +59,7 @@
     let filtered_cards = $derived<TCard[]>(
         cards.filter(
             (card: TCard) =>
+                card.attributes.side_id === side &&
                 card.attributes.card_type_id !== `${side}_identity`,
         ),
     );
@@ -85,6 +86,7 @@
                           "upgrade",
                           "runner_identity",
                           "corp_identity",
+                          "ice",
                       ].includes(type),
               ),
     );
@@ -401,6 +403,9 @@
                     {/each}
                 </tbody>
             </table>
+            {#if results.length === 0}
+                <p class="builder__empty">No cards found</p>
+            {/if}
         {:else if active_tab === "Notes"}
             <div class="builder__notes">
                 <label>
@@ -480,11 +485,11 @@
     }
 
     .builder__empty {
-        opacity: 0.6;
+        color: var(--text-muted);
     }
 
     .builder__label {
-        font-weight: 600;
+        font-weight: var(--font-weight-semibold);
     }
 
     .builder__input {
@@ -565,7 +570,7 @@
     }
 
     .builder__notes-preview {
-        opacity: 0.7;
+        color: var(--text-muted);
     }
 
     @media (width <= 1024px) {

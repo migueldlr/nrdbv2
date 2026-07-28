@@ -1,19 +1,6 @@
 import type { Card, Decklist, FileFormat, CardGroup, Printing } from '$lib/types';
 
-import { NRDB_API_URL, NRDB_SQLITE_NAME, NRDB_IMAGE_URL } from '$lib/constants';
-
-export const reset_opfs_data = async () => {
-	const root = await navigator.storage.getDirectory();
-	root.removeEntry(NRDB_SQLITE_NAME)
-		.then(() => {
-			console.info('OPFS database file removed');
-		})
-		.catch((err) => {
-			console.error('Failed to remove OPFS database file:', err);
-		});
-
-	window.location.reload();
-};
+import { NRDB_API_URL, NRDB_IMAGE_URL } from '$lib/constants';
 
 export const fetch_published_databases = (): Promise<string | null> => {
 	return fetch(`${NRDB_API_URL}/published_databases`)

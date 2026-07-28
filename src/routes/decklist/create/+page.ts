@@ -5,12 +5,13 @@ import type { PageLoad } from './$types';
 
 export const ssr = false;
 
-export const load: PageLoad = async () => {
+export const load: PageLoad = async ({ data }) => {
 	const factions: FactionRow[] = await sql`SELECT * FROM factions`;
 	const cards: UnifiedCardRow[] = await sql`SELECT * FROM unified_cards`;
 
 	return {
 		factions: factions.map(adaptFaction),
-		cards: cards.map(adaptCard)
+		cards: cards.map(adaptCard),
+		...data
 	};
 };

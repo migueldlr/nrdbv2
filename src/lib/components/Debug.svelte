@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { reset_opfs_data } from "$lib/utils";
+    import { reset_opfs_data } from "$lib/sqlite";
     import { page } from "$app/state";
 </script>
 

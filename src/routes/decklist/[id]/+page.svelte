@@ -145,9 +145,9 @@
                     <div class="group">
                         <div class="group-header">
                             <Icon name={group.type} />
-                            <h2>
+                            <h4>
                                 {card_types[group.type]} ({count[group.type]})
-                            </h2>
+                            </h4>
                         </div>
                         <ul class="cards">
                             {#each group.data as card (card.id)}
@@ -173,9 +173,9 @@
                     <div class="group">
                         <div>
                             <Icon name={group.type} />
-                            <h2>
+                            <h4>
                                 {card_types[group.type]} ({count[group.type]})
-                            </h2>
+                            </h4>
                         </div>
                         <Table decklist={data.decklist} cards={group.data} />
                     </div>
@@ -211,10 +211,10 @@
             </div>
         </div>
 
-        <Printer decklist={data.decklist} cards={data.cards} />
-
         <pre>{JSON.stringify(data, null, 2)}</pre>
     </Container>
+
+    <Printer decklist={data.decklist} cards={data.cards} />
 {/if}
 
 <style>
@@ -222,10 +222,6 @@
     .group {
         display: grid;
         gap: 1rem;
-
-        & h2 {
-            margin: unset;
-        }
     }
 
     ul {
