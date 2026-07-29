@@ -1,4 +1,6 @@
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { preview } from '@vitest/browser-preview';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config';
 
@@ -7,15 +9,25 @@ export default mergeConfig(
 	defineConfig({
 		test: {
 			expect: { requireAssertions: true },
+			coverage: {
+				provider: 'istanbul',
+				reporter: ['text', 'html', 'lcov'],
+				reportsDirectory: './coverage',
+				include: ['src/**/*.{ts,js,svelte}'],
+				exclude: [
+					'src/**/*.{test,spec}.{ts,js}',
+					'src/**/*.stories.{ts,js,svelte}',
+					'src/**/*.d.ts'
+				]
+			},
 			projects: [
 				{
 					extends: './vite.config.ts',
 					test: {
 						name: 'client',
-						environment: 'browser',
 						browser: {
 							enabled: true,
-							provider: 'playwright',
+							provider: preview(),
 							instances: [
 								{
 									browser: 'chromium'
@@ -44,14 +56,18 @@ export default mergeConfig(
 				},
 				{
 					extends: './vite.config.ts',
-					plugins: [storybookTest({ configDir: '.storybook' })],
+					plugins: [
+						svelte({
+							include: [/\.svelte$/, /node_modules\/@storybook\/.*\.svelte$/]
+						}),
+						storybookTest({ configDir: '.storybook' })
+					],
 					test: {
 						name: 'storybook',
-						environment: 'browser',
 						browser: {
 							enabled: true,
 							headless: true,
-							provider: 'playwright',
+							provider: preview(),
 							instances: [{ browser: 'chromium' }]
 						},
 						setupFiles: ['./.storybook/vitest.setup.ts']
