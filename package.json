@@ -20,7 +20,7 @@
 		"storybook": "storybook dev -p 6006",
 		"test:coverage": "vitest run --project server --project client --coverage",
 		"test:e2e": "playwright test",
-		"test:unit": "vitest --project server --project client",
+		"test:unit": "vitest run --project server --project client",
 		"test": "npm run test:unit -- --run && npm run test:e2e"
 	},
 	"dependencies": {
