@@ -10,7 +10,7 @@ export default mergeConfig(
 		test: {
 			expect: { requireAssertions: true },
 			coverage: {
-				provider: 'v8',
+				provider: 'istanbul',
 				reporter: ['text', 'html', 'lcov'],
 				reportsDirectory: './coverage',
 				include: ['src/**/*.{ts,js,svelte}'],

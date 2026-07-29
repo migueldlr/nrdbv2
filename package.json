@@ -49,6 +49,7 @@
 		"@types/node": "^20.19.43",
 		"@vitest/browser": "^4",
 		"@vitest/browser-preview": "^4",
+		"@vitest/coverage-istanbul": "^4.1.10",
 		"@vitest/coverage-v8": "^4",
 		"better-sqlite3": "^12.11.1",
 		"command-line-args": "^6.0.2",
