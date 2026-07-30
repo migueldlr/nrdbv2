@@ -1,5 +1,4 @@
 import type { Card } from './types';
-import { NRDB_API_URL } from '$lib/constants';
 
 /**
  * Helper function to create mock Card objects with all required properties.
@@ -105,8 +104,18 @@ export const createMockCard = (
 });
 
 export const create_mock_deck = async () => {
-	const decklist = await fetch(`${NRDB_API_URL}/decklists?page[size]=1`);
-	const decklist_data = await decklist.json();
-
-	return decklist_data.data[0];
+	return {
+		id: 'mock-deck-1',
+		type: 'decklists',
+		attributes: {
+			name: 'Mock Deck',
+			user_id: 1,
+			username: 'testuser',
+			description: 'Mock deck description',
+			card_slots: { '01001': 3 },
+			identity_card_id: '01001',
+			influence_spent: 0,
+			num_cards: 45
+		}
+	};
 };
