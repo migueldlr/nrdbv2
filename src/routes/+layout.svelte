@@ -75,7 +75,6 @@
             }
 
             if (needsDownload) {
-                console.log("[SQLITE] Fetching and decompressing sqlite db...");
                 await download_and_extract_sqlite(sqlite_url);
 
                 console.log(
@@ -92,8 +91,10 @@
             // against empty subtype/set/cycle maps. A vocab failure is logged but still
             // marks ready (search degrades to the static vocabulary rather than never running).
             if (dbReady) {
+                console.log('[SQLITE] Preparing search vocabulary...')
                 await prepareSearch(() => db_ready.set(true));
             } else {
+                console.error('[SQLITE] Could not ready database.')
                 db_ready.set(false);
             }
 
