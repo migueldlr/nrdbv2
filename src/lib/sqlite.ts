@@ -6,15 +6,19 @@ export const { sql, overwriteDatabaseFile, deleteDatabaseFile } = new SQLocal(NR
 const REQUIRED_TABLES = ['unified_cards', 'card_sets', 'card_cycles', 'card_subtypes'];
 
 export const get_current_sqlite_url = async (): Promise<string | null> => {
-	console.info('[SQLITE] Getting current SQLite URL');
+	console.info(`[SQLITE] Getting current SQLite URL from ${CURRENT_SQLITE_URL_FILENAME}`);
 	try {
 		const root = await navigator.storage.getDirectory();
 		const urlHandle = await root.getFileHandle(CURRENT_SQLITE_URL_FILENAME);
 		const file = await urlHandle.getFile();
 		return await file.text();
 	} catch (error) {
-		console.error('[SQLITE] Failed to get current SQLite URL:', error);
+		console.error(
+			`[SQLITE] Failed to get current SQLite URL from (${CURRENT_SQLITE_URL_FILENAME}): `,
+			error
+		);
 		if (error instanceof DOMException && error.name === 'NotFoundError') {
+			console.error(`[SQLITE] ${CURRENT_SQLITE_URL_FILENAME} not found, returning null`);
 			return null;
 		}
 		throw error;
@@ -50,6 +54,7 @@ export const check_sqlite_db_populated = async (): Promise<boolean> => {
 			`SELECT name FROM sqlite_master WHERE type = 'table' AND name IN (${placeholders})`,
 			...REQUIRED_TABLES
 		);
+		console.info(`[SQLITE] Found ${rows.length} of ${REQUIRED_TABLES.length} required tables`);
 		return rows.length === REQUIRED_TABLES.length;
 	} catch (error) {
 		console.error('[SQLITE] Failed to inspect the local database schema:', error);

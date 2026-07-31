@@ -44,70 +44,43 @@
 
     onMount(async () => {
         try {
-            const [sqlite_url, storedUrl, dbPopulated] = await Promise.all([
+            // Fetch remote URL and stored URL first (no SQLocal worker query yet)
+            const [sqlite_url, storedUrl] = await Promise.all([
                 fetch_published_databases(),
                 get_current_sqlite_url(),
-                check_sqlite_db_populated(),
             ]);
-
             if (sqlite_url === null) {
-                throw new Error(
-                    "No valid database URL found in published_databases response",
-                );
+                console.error('[SQLITE] retrieved sqlite_url is null');
+                throw new Error("No valid database URL found in published_databases response");
             }
-
             let needsDownload = false;
             let dbReady = false;
-
             if (storedUrl !== sqlite_url) {
                 console.log("[SQLITE] Database URL changed. Needs update.");
                 needsDownload = true;
-            } else if (!dbPopulated) {
-                console.log(
-                    "[SQLITE] Database in OPFS is missing or empty. Needs download.",
-                );
-                needsDownload = true;
-            } else {
-                console.log(
-                    `[SQLITE] ${NRDB_SQLITE_NAME} already exists and is up to date in OPFS. Skipping download.`,
-                );
-                dbReady = true;
             }
-
             if (needsDownload) {
                 await download_and_extract_sqlite(sqlite_url);
-
-                console.log(
-                    `[SQLITE] ${NRDB_SQLITE_NAME} downloaded and saved to OPFS.`,
-                );
-
-                // Write the current sqlite URL to OPFS so we know which version we have
+                console.log(`[SQLITE] ${NRDB_SQLITE_NAME} downloaded and saved to OPFS.`);
                 await set_current_sqlite_url(sqlite_url);
-
+            }
+            console.log('[SQLITE] checking sqlitedb for expected tables.');
+            const dbPopulated = await check_sqlite_db_populated();
+            if (!dbPopulated) {
+                console.log("[SQLITE] Database in OPFS is missing or empty. Needs download.");
+                needsDownload = true;
+            } else {
+                console.log(`[SQLITE] ${NRDB_SQLITE_NAME} already exists and is up to date in OPFS.`);
                 dbReady = true;
             }
-
-            // Populate the search vocabulary before marking ready, so searches never run
-            // against empty subtype/set/cycle maps. A vocab failure is logged but still
-            // marks ready (search degrades to the static vocabulary rather than never running).
-            if (dbReady) {
-                console.log('[SQLITE] Preparing search vocabulary...')
-                await prepareSearch(() => db_ready.set(true));
-            } else {
-                console.error('[SQLITE] Could not ready database.')
-                db_ready.set(false);
-            }
-
-            // 30 days
+            console.log('[SQLITE] Preparing search vocabulary...');
+            await prepareSearch(() => db_ready.set(true));
             document.cookie = `${NRDB_CACHE_COOKIE}=1; max-age=2592000; path=/`;
         } catch (error) {
-            console.error(
-                "[SQLITE] Failed to initialize local database:",
-                error,
-            );
-
-            // Clear stale cookie so next page load falls back to SSR
+            console.error("[SQLITE] Failed to initialize local database:", error);
             document.cookie = `${NRDB_CACHE_COOKIE}=; max-age=0; path=/`;
+            console.error('[SQLITE] Could not ready database.');
+            db_ready.set(false);
         }
 
         // Scroll tracking (always runs regardless of DB state)
