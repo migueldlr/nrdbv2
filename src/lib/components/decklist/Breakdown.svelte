@@ -14,8 +14,8 @@
 
 	let { decklist, cards }: Props = $props();
 
-	const groups = group_cards_by_type(cards);
-	const count = card_quantity(decklist, groups);
+	const groups = $derived(group_cards_by_type(cards));
+	const count = $derived(card_quantity(decklist, groups));
 </script>
 
 <div class="decklist-breakdown">

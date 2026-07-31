@@ -38,6 +38,7 @@
         factions: FactionIds[];
         types: CardTypeIds[];
     }>({
+        // svelte-ignore state_referenced_locally
         factions: [faction],
         types: [],
     });

@@ -9,8 +9,10 @@
 
     let { decklist, cards }: Props = $props();
 
-    let nsg_cards = cards.filter((card) =>
-        card.attributes.designed_by.includes("null_signal_games"),
+    const nsg_cards = $derived(
+        cards.filter((card) =>
+            card.attributes.designed_by.includes("null_signal_games"),
+        ),
     );
 
     const cards_formatted = $derived<Card[]>([
