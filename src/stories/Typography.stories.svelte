@@ -12,7 +12,7 @@
 				options: ['auto', 'light', 'dark']
 			}
 		},
-		args: { theme: 'light' }
+		args: { theme: 'auto' }
 	});
 
 	const SPECIMEN = 'René "Loup" Arcemont: Party Animal';
@@ -38,6 +38,9 @@
 		<Surface {...args}>
 			<div style="font-weight: var(--font-weight-normal)">
 				<code>--font-weight-normal</code> &middot; 400 &mdash; {SPECIMEN}
+			</div>
+			<div style="font-weight: var(--font-weight-medium)">
+				<code>--font-weight-medium</code> &middot; 500 &mdash; {SPECIMEN}
 			</div>
 			<div style="font-weight: var(--font-weight-semibold)">
 				<code>--font-weight-semibold</code> &middot; 600 &mdash; {SPECIMEN}

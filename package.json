@@ -25,7 +25,9 @@
 	},
 	"dependencies": {
 		"@auth/sveltekit": "^1.11.3",
+		"@lucide/svelte": "^1.25.0",
 		"@nsg/common-components": "workspace:../common-components/dist",
+		"bits-ui": "^2.18.1",
 		"ohm-js": "^17.5.0",
 		"sqlocal": "^0.18"
 	},

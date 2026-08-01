@@ -6,7 +6,7 @@
         children?: Snippet;
     }
 
-    let { theme = "light", children }: Props = $props();
+    let { theme = "auto", children }: Props = $props();
 </script>
 
 <div class="surface" style:color-scheme={theme === "auto" ? null : theme}>
