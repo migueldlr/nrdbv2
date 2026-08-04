@@ -37,8 +37,8 @@
 
     let { data }: Props = $props();
 
-    const grouped_cards: CardGroup[] = group_cards_by_type(data.cards);
-    const count = card_quantity(data.decklist, grouped_cards);
+    const grouped_cards: CardGroup[] = $derived(group_cards_by_type(data.cards));
+    const count = $derived(card_quantity(data.decklist, grouped_cards));
     // const total_cards = Object.values(count).reduce((sum, n) => sum + n, 0);
 
     // TODO(review): Ensure packs are unique and sorted by release date, and anything else useful

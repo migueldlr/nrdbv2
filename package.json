@@ -18,6 +18,7 @@
 		"preview": "vite preview",
 		"start": "node build",
 		"storybook": "storybook dev -p 6006",
+		"svelte-check": "svelte-check --tsconfig ./tsconfig.json",
 		"test:coverage": "vitest run --project server --project client --coverage",
 		"test:e2e": "playwright test",
 		"test:unit": "vitest run --project server --project client",
