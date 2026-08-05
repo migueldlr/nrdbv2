@@ -7,6 +7,7 @@ export const searchInput = (page: Page) => page.locator('input[placeholder="Sear
 export const searchDropdown = (page: Page) => page.locator('.search-dropdown');
 export const interpretedSearchCheckbox = (page: Page) =>
 	searchDropdown(page).getByLabel('Interpreted');
+// TODO: abstract this so we're not directly checking OPFS
 export const waitForSearchDatabase = (page: Page) =>
 	page.waitForFunction(
 		async () => {
