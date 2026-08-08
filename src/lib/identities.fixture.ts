@@ -1,79 +1,55 @@
-import type { Card } from './types';
+import { createMockCard } from './test-helpers';
 
-export const createFixtureCard = (
-	id: string,
-	title: string,
-	side_id: string,
-	faction_id: string,
-	cycle: string,
-	card_type_id = `${side_id}_identity`
-): Card =>
-	({
-		id,
-		type: 'cards',
-		attributes: {
-			title,
-			card_type_id,
-			side_id,
-			faction_id,
-			card_cycle_ids: [cycle]
-		}
-	}) as unknown as Card;
-
-export const PRECISION_DESIGN = createFixtureCard(
+export const PRECISION_DESIGN = createMockCard(
 	'haas_bioroid_precision_design',
 	'Haas-Bioroid: Precision Design',
-	'corp',
-	'haas_bioroid',
-	'system_gateway'
+	['system_gateway'],
+	{ side_id: 'corp', faction_id: 'haas_bioroid', card_type_id: 'corp_identity' }
 );
 
-export const RESTORING_HUMANITY = createFixtureCard(
+export const RESTORING_HUMANITY = createMockCard(
 	'jinteki_restoring_humanity',
 	'Jinteki: Restoring Humanity',
-	'corp',
-	'jinteki',
-	'system_gateway'
+	['system_gateway'],
+	{ side_id: 'corp', faction_id: 'jinteki', card_type_id: 'corp_identity' }
 );
 
-export const ESA = createFixtureCard(
+export const ESA = createMockCard(
 	'esa_afontov_eco_insurrectionist',
 	'Esâ Afontov: Eco-Insurrectionist',
-	'runner',
-	'anarch',
-	'borealis'
+	['borealis'],
+	{ side_id: 'runner', faction_id: 'anarch', card_type_id: 'runner_identity' }
 );
 
-export const TOPAN = createFixtureCard(
-	'topan_ormas_leader',
-	'Topan: Ormas Leader',
-	'runner',
-	'anarch',
-	'elevation'
-);
+export const TOPAN = createMockCard('topan_ormas_leader', 'Topan: Ormas Leader', ['elevation'], {
+	side_id: 'runner',
+	faction_id: 'anarch',
+	card_type_id: 'runner_identity'
+});
 
-export const ZAHYA = createFixtureCard(
+export const ZAHYA = createMockCard(
 	'zahya_sadeghi_versatile_smuggler',
 	'Zahya Sadeghi: Versatile Smuggler',
-	'runner',
-	'criminal',
-	'system_gateway'
+	['system_gateway'],
+	{ side_id: 'runner', faction_id: 'criminal', card_type_id: 'runner_identity' }
 );
 
-export const TAO = createFixtureCard(
+export const TAO = createMockCard(
 	'tao_salonga_telepresence_magician',
 	'Tāo Salonga: Telepresence Magician',
-	'runner',
-	'shaper',
-	'system_gateway'
+	['system_gateway'],
+	{ side_id: 'runner', faction_id: 'shaper', card_type_id: 'runner_identity' }
 );
 
-export const APEX = createFixtureCard(
+export const APEX = createMockCard(
 	'apex_invasive_predator',
 	'Apex: Invasive Predator',
-	'runner',
-	'apex',
-	'data_and_destiny'
+	['data_and_destiny'],
+	{ side_id: 'runner', faction_id: 'apex', card_type_id: 'runner_identity' }
 );
 
-export const SHRED = createFixtureCard('shred', 'Shred', 'runner', 'anarch', 'elevation', 'event');
+export const SHRED = createMockCard('shred', 'Shred', ['elevation'], {
+	side_id: 'runner',
+	faction_id: 'anarch',
+	card_type_id: 'event'
+});

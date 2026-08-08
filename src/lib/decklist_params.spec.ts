@@ -7,15 +7,9 @@ import {
 	writeParams,
 	type DecklistCatalog
 } from './decklist_params';
-import {
-	APEX,
-	createFixtureCard,
-	ESA,
-	PRECISION_DESIGN,
-	RESTORING_HUMANITY,
-	ZAHYA
-} from './identities.fixture';
-import type { Faction } from './types';
+import { APEX, ESA, PRECISION_DESIGN, RESTORING_HUMANITY, ZAHYA } from './identities.fixture';
+import { createMockCard } from './test-helpers';
+import type { Faction, FactionIds } from './types';
 
 const faction = (id: string): Faction => ({ id }) as unknown as Faction;
 
@@ -26,13 +20,11 @@ const catalog: DecklistCatalog = {
 		ESA,
 		ZAHYA,
 		APEX,
-		createFixtureCard(
-			'unknown_faction_id',
-			'Unknown Faction',
-			'runner',
-			'not_a_faction',
-			'borealis'
-		)
+		createMockCard('unknown_faction_id', 'Unknown Faction', ['borealis'], {
+			side_id: 'runner',
+			faction_id: 'not_a_faction' as FactionIds,
+			card_type_id: 'runner_identity'
+		})
 	],
 	factions: [
 		faction('haas_bioroid'),
