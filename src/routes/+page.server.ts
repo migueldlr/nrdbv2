@@ -1,8 +1,9 @@
 import { NRDB_API_URL } from '$lib/constants';
+import { cache_guard } from '$lib/server/guard';
 import type { PageServerLoad } from './$types';
 import type { Card, CollectionResponse, Decklist, SingleResponse } from '$lib/types';
 
-export const load: PageServerLoad = async ({ fetch }) => {
+export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	return {
 		// https://svelte.dev/docs/kit/load#Streaming-with-promises
 		// eslint-disable-next-line no-async-promise-executor
@@ -43,15 +44,47 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			}
 		}),
 		// https://svelte.dev/docs/kit/load#Streaming-with-promises
-		// eslint-disable-next-line no-async-promise-executor
-		decklists: new Promise(async (resolve, reject) => {
-			try {
-				const response = await fetch(`${NRDB_API_URL}/decklists?page[size]=10`);
-				const json: CollectionResponse<Decklist> = await response.json();
-				resolve(json.data);
-			} catch (error) {
-				reject(error);
-			}
-		})
+		decklists: (async () => {
+			const response = await fetch(`${NRDB_API_URL}/decklists?page[size]=10`);
+			const json: CollectionResponse<Decklist> = await response.json();
+
+			if (json.data.length === 0) return [];
+
+			const cold_data = await cache_guard(cookies, async () => {
+				try {
+					const cards_url = new URL(`${NRDB_API_URL}/cards`);
+					cards_url.searchParams.set(
+						'filter[decklist_id]',
+						json.data.map((decklist) => decklist.id).join(',')
+					);
+					cards_url.searchParams.set('page[size]', '1000');
+
+					const cards_response = await fetch(cards_url);
+					if (!cards_response.ok) {
+						throw new Error(
+							`Cards request failed with status ${cards_response.status}`
+						);
+					}
+
+					const cards_json: CollectionResponse<Card> = await cards_response.json();
+					const cards_by_id = new Map(cards_json.data.map((card) => [card.id, card]));
+
+					return json.data.map((decklist) => ({
+						decklist,
+						cards: Object.keys(decklist.attributes.card_slots)
+							.map((id) => cards_by_id.get(id))
+							.filter((card): card is Card => card !== undefined)
+					}));
+				} catch (error) {
+					console.error(
+						'Failed to load cards for decklist tiles; falling back to the local database:',
+						error
+					);
+					return json.data.map((decklist) => ({ decklist }));
+				}
+			});
+
+			return cold_data ?? json.data.map((decklist) => ({ decklist }));
+		})()
 	};
 };

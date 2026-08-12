@@ -28,6 +28,19 @@ export const decklist: Decklist = {
 	links: { self: '/decklists/precision-design-demo' }
 };
 
+export const secondDecklist: Decklist = {
+	...decklist,
+	id: 'second-decklist',
+	attributes: {
+		...decklist.attributes,
+		name: 'Second decklist',
+		card_slots: {
+			haas_bioroid_precision_design: 1,
+			hedge_fund: 3
+		}
+	}
+};
+
 export const cards: Card[] = [
 	createMockCard(
 		'haas_bioroid_precision_design',
