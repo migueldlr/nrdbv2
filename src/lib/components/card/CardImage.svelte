@@ -100,7 +100,7 @@
     img.card {
         display: flex;
         aspect-ratio: 0.718 / 1;
-        border-radius: 4.55% / 3.5%;
+        border-radius: var(--card-radius);
         width: 100%;
     }
 
