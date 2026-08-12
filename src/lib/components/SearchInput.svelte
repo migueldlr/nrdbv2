@@ -146,6 +146,10 @@
             bind:this={search_input}
             type="text"
             name="q"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck={false}
             placeholder="Search"
             bind:value={$search_query}
             onfocus={() => (is_open = true)}
