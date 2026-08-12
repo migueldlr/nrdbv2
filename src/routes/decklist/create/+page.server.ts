@@ -1,7 +1,7 @@
 import { NRDB_API_URL } from '$lib/constants';
 import type { PageServerLoad } from './$types';
-import type { FormatCycles } from '$lib/deck_formats';
-import type { Card, CardPool, CollectionResponse, Faction, Format } from '$lib/types';
+import { isDeckFormat, type ActiveCardPoolIds } from '$lib/deck_formats';
+import type { Card, CollectionResponse, Faction, Format } from '$lib/types';
 import { cache_guard } from '$lib/server/guard';
 
 const IDENTITY_TYPES = ['corp_identity', 'runner_identity'] as const;
@@ -12,15 +12,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 	const identityId = url.searchParams.get('identity');
 
 	const coldData = await cache_guard(cookies, async () => {
-		const [factions, formats, cardPools, ...identityPages] = await Promise.all([
+		const [factions, formats, ...identityPages] = await Promise.all([
 			fetch(`${NRDB_API_URL}/factions?page[size]=50`)
 				.then((response) => response.json() as Promise<CollectionResponse<Faction>>)
 				.then((response) => response.data),
 			fetch(`${NRDB_API_URL}/formats?page[size]=50`)
 				.then((response) => response.json() as Promise<CollectionResponse<Format>>)
-				.then((response) => response.data),
-			fetch(`${NRDB_API_URL}/card_pools?page[size]=100`)
-				.then((response) => response.json() as Promise<CollectionResponse<CardPool>>)
 				.then((response) => response.data),
 			...IDENTITY_TYPES.map((card_type_id) =>
 				fetch(`${NRDB_API_URL}/cards?filter[card_type_id]=${card_type_id}&page[size]=250`)
@@ -29,14 +26,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 			)
 		]);
 
-		const cyclesByPool = new Map(
-			cardPools.map((pool) => [pool.id, pool.attributes.card_cycle_ids ?? []])
-		);
-
-		const format_cycles: FormatCycles = {};
+		const active_card_pool_ids: ActiveCardPoolIds = {};
 		for (const format of formats) {
-			const cycles = cyclesByPool.get(format.attributes.active_card_pool_id);
-			if (cycles) format_cycles[format.id] = cycles;
+			if (!isDeckFormat(format.id)) continue;
+
+			active_card_pool_ids[format.id] = format.attributes.active_card_pool_id;
 		}
 
 		const cards = identityPages.flat();
@@ -50,7 +44,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 					.then((response) => response.data)
 			: [];
 
-		return { factions, cards, side_cards: sideCards, format_cycles };
+		return { factions, cards, side_cards: sideCards, active_card_pool_ids };
 	});
 
 	return {

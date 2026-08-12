@@ -19,7 +19,7 @@
     let catalog = $derived({
         cards: data.cards ?? [],
         factions: data.factions ?? [],
-        format_cycles: data.format_cycles ?? {},
+        active_card_pool_ids: data.active_card_pool_ids ?? {},
     });
 
     let selected = $derived(readParams(page.url.searchParams, catalog));

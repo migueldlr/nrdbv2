@@ -6,16 +6,17 @@ import {
 	type DecklistCatalog,
 	type FactionGroup
 } from './identities';
-import { ESA, PRECISION_DESIGN, SHRED, TAO, TOPAN, ZAHYA } from './identities.fixture';
+import { APEX, ESA, PRECISION_DESIGN, SHRED, TAO, TOPAN, ZAHYA } from './identities.fixture';
 import type { Faction } from './types';
 
 const catalog: DecklistCatalog = {
 	// SHRED is a runner card that is not an identity.
-	cards: [PRECISION_DESIGN, ESA, TOPAN, TAO, SHRED],
+	cards: [PRECISION_DESIGN, ESA, TOPAN, TAO, APEX, SHRED],
 	factions: [] as unknown as Faction[],
-	format_cycles: {
-		standard: ['borealis', 'elevation'],
-		eternal: ['borealis', 'elevation', 'system_gateway']
+	active_card_pool_ids: {
+		startup: 'startup_vantage_point',
+		standard: 'standard_2026_vantage_point',
+		eternal: 'eternal'
 	}
 };
 
@@ -23,7 +24,7 @@ describe('identitiesByFaction', () => {
 	it('groups identities of the requested side by faction', () => {
 		const groups = identitiesByFaction(catalog, 'runner', 'standard');
 
-		expect([...groups.keys()]).toEqual(['anarch']);
+		expect([...groups.keys()]).toEqual(['anarch', 'shaper']);
 		expect(groups.get('anarch')?.map((c) => c.id)).toEqual([
 			'esa_afontov_eco_insurrectionist',
 			'topan_ormas_leader'
@@ -41,13 +42,22 @@ describe('identitiesByFaction', () => {
 		expect(anarch?.map((c) => c.id)).not.toContain('shred');
 	});
 
+	it('excludes historical format members outside the active pool', () => {
+		expect(ESA.attributes.format_ids).toContain('startup');
+		expect(
+			identitiesByFaction(catalog, 'runner', 'startup')
+				.get('anarch')
+				?.map((card) => card.id)
+		).not.toContain(ESA.id);
+	});
+
 	it('excludes factions the format has no pool for', () => {
-		expect(identitiesByFaction(catalog, 'runner', 'standard').has('shaper')).toBe(false);
-		expect(identitiesByFaction(catalog, 'runner', 'eternal').has('shaper')).toBe(true);
+		expect(identitiesByFaction(catalog, 'runner', 'standard').has('apex')).toBe(false);
+		expect(identitiesByFaction(catalog, 'runner', 'eternal').has('apex')).toBe(true);
 	});
 
 	it('returns nothing when the pool data is missing', () => {
-		const empty = { ...catalog, format_cycles: {} };
+		const empty = { ...catalog, active_card_pool_ids: {} };
 
 		expect(identitiesByFaction(empty, 'runner', 'standard').size).toBe(0);
 	});
@@ -57,8 +67,8 @@ describe('identitiesByFaction', () => {
 const orderingCatalog: DecklistCatalog = {
 	...catalog,
 	cards: [TAO, ZAHYA, TOPAN, ESA],
-	format_cycles: {
-		standard: ['borealis', 'elevation', 'system_gateway']
+	active_card_pool_ids: {
+		standard: 'standard_2026_vantage_point'
 	}
 };
 
