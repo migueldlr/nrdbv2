@@ -55,6 +55,15 @@ describe('getHighResImage', () => {
 		expect(result).toBe(`${NRDB_IMAGE_URL}/xlarge/print123.webp`);
 	});
 
+	it('should return a small JPG when requested for an NSG card', () => {
+		const card = createMockCard('1', 'Test Card', ['system_gateway'], {
+			latest_printing_id: 'print123'
+		});
+
+		const result = getHighResImage(card, 'small');
+		expect(result).toBe(`${NRDB_IMAGE_URL}/small/print123.jpg`);
+	});
+
 	it('should return NSG image URL when card has multiple cycles including NSG cycle', () => {
 		const card = createMockCard('1', 'Test Card', ['core', 'elevation', 'other'], {
 			latest_printing_id: 'print123'

@@ -28,7 +28,7 @@ export const fetch_published_databases = (): Promise<string | null> => {
 
 export const getHighResImage = (
 	card: Card | Printing,
-	size: 'small' | 'medium' | 'large' | 'xlarge' = 'large'
+	size?: 'small' | 'medium' | 'large' | 'xlarge'
 ): string => {
 	// if the card includes one of the card cycles that are released by null signal games, use the nsg image
 	const nsgCardCycles = ['elevation', 'liberation', 'borealis', 'ashes', 'system_gateway'];
@@ -37,22 +37,25 @@ export const getHighResImage = (
 	const printingId = isPrinting ? card.id : (card as Card).attributes.latest_printing_id;
 
 	if (isPrinting) {
-		return `${NRDB_IMAGE_URL}/${size}/${card.id}.jpg`;
+		return `${NRDB_IMAGE_URL}/${size ?? 'large'}/${card.id}.jpg`;
 	}
 
 	const c = card as Card;
 
 	// If the card is from a NSG cycle, or doesn't have a NRDB classic image, use the NRDB image
 	if (nsgCardCycles.some((cycle) => c.attributes.card_cycle_ids.includes(cycle))) {
-		return `${NRDB_IMAGE_URL}/xlarge/${printingId}.webp`;
+		const requestedSize = size ?? 'xlarge';
+		// The CDN stores xlarge NSG images as webp and smaller sizes as jpg
+		const fileExtension = requestedSize === 'xlarge' ? 'webp' : 'jpg';
+		return `${NRDB_IMAGE_URL}/${requestedSize}/${printingId}.${fileExtension}`;
 	}
 
 	if (!c.attributes.latest_printing_images?.nrdb_classic) {
-		return `${NRDB_IMAGE_URL}/large/${printingId}.jpg`;
+		return `${NRDB_IMAGE_URL}/${size ?? 'large'}/${printingId}.jpg`;
 	}
 
 	return (
-		c.attributes.latest_printing_images.nrdb_classic[size] ||
+		c.attributes.latest_printing_images.nrdb_classic[size ?? 'large'] ??
 		c.attributes.latest_printing_images.nrdb_classic.large
 	);
 };
