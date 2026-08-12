@@ -1,5 +1,5 @@
 import { FACTIONS } from './constants';
-import { cardInFormatPool, type DeckFormat, type FormatCycles } from './deck_formats';
+import type { ActiveCardPoolIds, DeckFormat } from './deck_formats';
 import { faction_name } from './i18n';
 import { normalizedIncludes } from './search/filter';
 import type { Card, Faction, FactionIds, SidesIds } from './types';
@@ -7,8 +7,7 @@ import type { Card, Faction, FactionIds, SidesIds } from './types';
 export interface DecklistCatalog {
 	cards: Card[];
 	factions: Faction[];
-	// TODO: too cycle-focused, should be an explicit CardPool instead
-	format_cycles: FormatCycles;
+	active_card_pool_ids: ActiveCardPoolIds;
 }
 
 export interface FactionGroup {
@@ -24,10 +23,12 @@ export const identitiesByFaction = (
 ): Map<FactionIds, Card[]> => {
 	const identityType = `${side}_identity`;
 	const byFaction = new Map<FactionIds, Card[]>();
+	const activeCardPoolId = catalog.active_card_pool_ids[format];
+	if (!activeCardPoolId) return byFaction;
 
 	for (const card of catalog.cards) {
 		if (card.attributes.card_type_id !== identityType) continue;
-		if (!cardInFormatPool(card, format, catalog.format_cycles)) continue;
+		if (!card.attributes.card_pool_ids.includes(activeCardPoolId)) continue;
 
 		const group = byFaction.get(card.attributes.faction_id) ?? [];
 		byFaction.set(card.attributes.faction_id, [...group, card]);

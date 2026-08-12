@@ -23,7 +23,8 @@ const catalog: DecklistCatalog = {
 		createMockCard('unknown_faction_id', 'Unknown Faction', ['borealis'], {
 			side_id: 'runner',
 			faction_id: 'not_a_faction' as FactionIds,
-			card_type_id: 'runner_identity'
+			card_type_id: 'runner_identity',
+			card_pool_ids: ['standard_2026_vantage_point']
 		})
 	],
 	factions: [
@@ -33,9 +34,9 @@ const catalog: DecklistCatalog = {
 		faction('criminal'),
 		faction('apex')
 	],
-	format_cycles: {
-		standard: ['elevation', 'borealis', 'system_gateway'],
-		eternal: ['elevation', 'borealis', 'system_gateway', 'data_and_destiny']
+	active_card_pool_ids: {
+		standard: 'standard_2026_vantage_point',
+		eternal: 'eternal'
 	}
 };
 
