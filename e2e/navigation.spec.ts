@@ -196,8 +196,8 @@ test.describe('Search input', () => {
 		await expect(searchDropdown(page)).not.toBeVisible();
 	});
 
-	test('Ctrl+F focuses the search input', async ({ page }) => {
-		await page.keyboard.press((await isMac(page)) ? 'Meta+f' : 'Control+f');
+	test('Cmd/Ctrl+K focuses the search input', async ({ page }) => {
+		await page.keyboard.press((await isMac(page)) ? 'Meta+k' : 'Control+k');
 		await expect(searchInput(page)).toBeFocused();
 		await expect(searchDropdown(page)).not.toBeVisible();
 	});
