@@ -105,9 +105,7 @@
 
             const faction_match =
                 filters.factions.length === 0 ||
-                filters.factions.includes(
-                    card.attributes.faction_id as FactionIds,
-                );
+                filters.factions.includes(card.attributes.faction_id);
 
             const type_match =
                 filters.types.length === 0 ||
@@ -126,7 +124,7 @@
 
         initialized_identity_id = identity_card.id;
 
-        filters.factions = [identity_card.attributes.faction_id as FactionIds];
+        filters.factions = [identity_card.attributes.faction_id];
         filters.types = [];
         deck.cards = {};
     });
@@ -214,14 +212,14 @@
                                                 {quantity}x {selected_card
                                                     .attributes.title}
                                             </a>
-                                            {#if selected_card.attributes.influence_cost > 0}
+                                            {#if selected_card.attributes.influence_cost !== null && selected_card.attributes.influence_cost > 0}
                                                 <Influence
                                                     count={selected_card
                                                         .attributes
                                                         .influence_cost}
                                                     theme={selected_card
                                                         .attributes
-                                                        .faction_id as FactionIds}
+                                                        .faction_id}
                                                 />
                                             {/if}
                                         </li>
@@ -277,17 +275,14 @@
                         {#each factions_list as faction_option (faction_option.id)}
                             <Button
                                 color={filters.factions.includes(
-                                    faction_option.id as FactionIds,
+                                    faction_option.id,
                                 )
                                     ? "primary"
                                     : "ghost"}
-                                onclick={() =>
-                                    toggle_faction(
-                                        faction_option.id as FactionIds,
-                                    )}
+                                onclick={() => toggle_faction(faction_option.id)}
                             >
                                 <Icon name={faction_option.id} size="sm" />
-                                {i18n_factions[faction_option.id as FactionIds]}
+                                {i18n_factions[faction_option.id]}
                             </Button>
                         {/each}
                     </div>
@@ -371,11 +366,11 @@
                                 {card_types[result.attributes.card_type_id]}
                             </td>
                             <td>
-                                {#if result.attributes.influence_cost > 0}
+                                {#if result.attributes.influence_cost !== null && result.attributes.influence_cost > 0}
                                     <Influence
                                         count={result.attributes.influence_cost}
                                         theme={result.attributes
-                                            .faction_id as FactionIds}
+                                            .faction_id}
                                     />
                                 {/if}
                             </td>
@@ -384,9 +379,7 @@
                                     name={result.attributes.faction_id}
                                     size="sm"
                                 />
-                                {i18n_factions[
-                                    result.attributes.faction_id as FactionIds
-                                ]}
+                                {i18n_factions[result.attributes.faction_id]}
                             </td>
                             <td>
                                 {#if result.attributes.cost !== null}

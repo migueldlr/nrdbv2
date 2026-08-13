@@ -6,7 +6,6 @@
     import { dev } from "$app/environment";
     import Icon from "./Icon.svelte";
     import Influence from "./Influence.svelte";
-    import type { FactionIds } from "$lib/types";
     import FormatText from "./FormatText.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
     import { card_types } from "$lib/i18n";
@@ -225,8 +224,7 @@
                     <Influence
                         text={true}
                         count={$tooltip.card.attributes.influence_cost}
-                        theme={$tooltip.card.attributes
-                            .faction_id as FactionIds}
+                        theme={$tooltip.card.attributes.faction_id}
                         total={true}
                     />
                 {/if}

@@ -1,6 +1,6 @@
 // Types for NRDB API results.
 
-import type { CardTypeIds, FactionIds } from './shared.types';
+import type { CardTypeIds, FactionIds, SidesIds } from './shared.types';
 
 // JSON::API response types to handle collection and single-resource responses.
 export interface CollectionResponse<T> {
@@ -30,52 +30,97 @@ export interface Links {
 	self: string;
 }
 
+export interface NrdbClassicImages {
+	nrdb_classic: {
+		tiny: string;
+		small: string;
+		medium: string;
+		large: string;
+		xlarge?: string;
+		narrative?: string;
+	};
+}
+
+export interface CardFace {
+	index: number;
+	images: NrdbClassicImages;
+	base_link?: string;
+	card_subtype_ids?: string[];
+	copy_quantity?: number;
+	display_subtypes?: string;
+	flavor?: string;
+	stripped_text?: string;
+	stripped_title?: string;
+	text?: string;
+	title?: string;
+}
+
+export interface CardAbilities {
+	additional_cost: boolean;
+	advanceable: boolean;
+	charge: boolean;
+	gains_subroutines: boolean;
+	gains_click: boolean;
+	has_paid_ability: boolean;
+	install_effect: boolean;
+	interrupt: boolean;
+	link_provided: number | null;
+	mark: boolean;
+	mu_provided: number | null;
+	num_printed_subroutines: number | null;
+	on_encounter_effect: boolean;
+	performs_trace: boolean;
+	recurring_credits_provided: number | null;
+	rez_effect: boolean;
+	sabotage: boolean;
+	score_effect: boolean;
+	steal_effect: boolean;
+	trash_ability: boolean;
+}
+
+export interface CardRestrictions {
+	banned: string[];
+	global_penalty: string[];
+	points: Record<string, number>;
+	restricted: string[];
+	universal_faction_cost: Record<string, number>;
+}
+
+export interface RelatedLink {
+	links: {
+		related: string;
+	};
+}
+
 export interface Relationships {
-	card_pool?: {
-		links: {
-			related: string;
-		};
-	};
-	card_types?: {
-		links: {
-			related: string;
-		};
-	};
-	cards?: {
-		links: {
-			related: string;
-		};
-	};
-	decklists?: {
-		links: {
-			related: string;
-		};
-	};
-	factions?: {
-		links: {
-			related: string;
-		};
-	};
-	format?: {
-		links: {
-			related: string;
-		};
-	};
-	printings?: {
-		links: {
-			related: string;
-		};
-	};
+	card?: RelatedLink;
+	card_cycle?: RelatedLink;
+	card_cycles?: RelatedLink;
+	card_pool?: RelatedLink;
+	card_pools?: RelatedLink;
+	card_set?: RelatedLink;
+	card_set_type?: RelatedLink;
+	card_sets?: RelatedLink;
+	card_subtypes?: RelatedLink;
+	card_type?: RelatedLink;
+	card_types?: RelatedLink;
+	cards?: RelatedLink;
+	decklists?: RelatedLink;
+	faction?: RelatedLink;
+	factions?: RelatedLink;
+	format?: RelatedLink;
+	illustrators?: RelatedLink;
+	printings?: RelatedLink;
 	restriction?: {
 		links: {
 			related: string | null;
 		};
 	};
-	side?: {
-		links: {
-			related: string;
-		};
-	};
+	restrictions?: RelatedLink;
+	reviews?: RelatedLink;
+	rulings?: RelatedLink;
+	side?: RelatedLink;
+	snapshots?: RelatedLink;
 }
 
 // The actual entity types from the NetrunnerDB API.
@@ -88,30 +133,30 @@ export interface Card {
 		stripped_title: string;
 		title: string;
 		card_type_id: CardTypeIds;
-		side_id: string;
+		side_id: SidesIds;
 		faction_id: FactionIds;
-		cost: string;
-		advancement_requirement: null;
-		agenda_points: null;
-		base_link: null;
+		cost: string | null;
+		advancement_requirement: string | null;
+		agenda_points: number | null;
+		base_link: number | null;
 		deck_limit: number;
-		in_restriction: true;
-		influence_cost: number;
-		influence_limit: null;
-		memory_cost: null;
-		minimum_deck_size: null;
+		in_restriction: boolean;
+		influence_cost: number | null;
+		influence_limit: number | null;
+		memory_cost: number | null;
+		minimum_deck_size: number | null;
 		num_printings: number;
 		printing_ids: string[];
 		date_release: string;
 		restriction_ids: string[];
 		strength: number | null;
-		stripped_text: string;
-		text: string;
-		trash_cost: null;
-		is_unique: false;
+		stripped_text: string | null;
+		text: string | null;
+		trash_cost: number | null;
+		is_unique: boolean;
 		card_subtype_ids: string[];
-		display_subtypes: null;
-		attribution: null;
+		display_subtypes: string | null;
+		attribution: string | null;
 		updated_at: string;
 		format_ids: string[];
 		card_pool_ids: string[];
@@ -121,44 +166,18 @@ export interface Card {
 		card_set_ids: string[];
 		card_set_names: string[];
 		designed_by: string;
+		narrative_text: string | null;
 		printings_released_by: string[];
-		pronouns: null;
-		pronunciation_approximation: null;
-		pronunciation_ipa: null;
+		pronouns: string | null;
+		pronunciation_approximation: string | null;
+		pronunciation_ipa: string | null;
 		layout_id: string;
 		num_extra_faces: number;
-		faces: unknown[];
-		card_abilities: {
-			additional_cost: boolean;
-			advanceable: boolean;
-			gains_subroutines: boolean;
-			interrupt: boolean;
-			link_provided: null;
-			mu_provided: null;
-			num_printed_subroutines: null;
-			on_encounter_effect: boolean;
-			performs_trace: boolean;
-			recurring_credits_provided: null;
-			rez_effect: boolean;
-			trash_ability: boolean;
-		};
-		restrictions: {
-			banned: string[];
-			global_penalty: string[];
-			points: object;
-			restricted: string[];
-			universal_faction_cost: object;
-		};
+		faces: CardFace[];
+		card_abilities: CardAbilities;
+		restrictions: CardRestrictions;
 		latest_printing_id: string;
-		latest_printing_images: {
-			nrdb_classic: {
-				tiny: string;
-				small: string;
-				medium: string;
-				large: string;
-				xlarge?: string;
-			};
-		};
+		latest_printing_images: NrdbClassicImages;
 	};
 	relationships: Relationships;
 	links: Links;
@@ -207,7 +226,7 @@ export interface CardSubtype {
 }
 
 export interface CardType {
-	id: string;
+	id: CardTypeIds;
 	type: 'card_types';
 	attributes: {
 		name: string;
@@ -265,13 +284,13 @@ export interface Cycle {
 }
 
 export interface Faction {
-	id: string;
+	id: FactionIds;
 	type: 'factions';
 	attributes: {
 		name: string;
-		description: string;
+		description: string | null;
 		is_mini: boolean;
-		side_id: string;
+		side_id: SidesIds;
 		updated_at: string;
 	};
 	relationships: Relationships;
@@ -287,7 +306,7 @@ export interface Format {
 		snapshot_ids: string[];
 		restriction_ids: string[];
 		active_card_pool_id: string;
-		active_restriction_id: string;
+		active_restriction_id: string | null;
 		updated_at: string;
 	};
 	relationships: Relationships;
@@ -315,8 +334,8 @@ export interface Printing {
 		card_cycle_name: string;
 		card_set_id: string;
 		card_set_name: string;
-		flavor: string;
-		display_illustrators: string;
+		flavor: string | null;
+		display_illustrators: string | null;
 		illustrator_ids: string[];
 		illustrator_names: string[];
 		position: number;
@@ -327,10 +346,10 @@ export interface Printing {
 		stripped_title: string;
 		title: string;
 		card_type_id: CardTypeIds;
-		side_id: string;
-		faction_id: string;
+		side_id: SidesIds;
+		faction_id: FactionIds;
 		advancement_requirement: string | null;
-		cost: number | null;
+		cost: string | null;
 		agenda_points: number | null;
 		base_link: number | null;
 		deck_limit: number;
@@ -344,8 +363,8 @@ export interface Printing {
 		printing_ids: string[];
 		restriction_ids: string[];
 		strength: number | null;
-		stripped_text: string;
-		text: string;
+		stripped_text: string | null;
+		text: string | null;
 		trash_cost: number | null;
 		is_unique: boolean;
 		card_subtype_ids: string[];
@@ -360,47 +379,18 @@ export interface Printing {
 		card_set_ids: string[];
 		card_set_names: string[];
 		designed_by: string;
+		narrative_text: string | null;
 		released_by: string;
 		printings_released_by: string[];
 		pronouns: string | null;
 		pronunciation_approximation: string | null;
 		pronunciation_ipa: string | null;
-		images: {
-			nrdb_classic: {
-				tiny: string;
-				small: string;
-				medium: string;
-				large: string;
-			};
-		};
-		card_abilities: {
-			additional_cost: boolean;
-			advanceable: boolean;
-			gains_subroutines: boolean;
-			interrupt: boolean;
-			link_provided: number | null;
-			mu_provided: number | null;
-			num_printed_subroutines: number | null;
-			on_encounter_effect: boolean;
-			performs_trace: boolean;
-			recurring_credits_provided: number | null;
-			rez_effect: boolean;
-			trash_ability: boolean;
-		};
+		images: NrdbClassicImages;
+		card_abilities: CardAbilities;
 		latest_printing_id: string;
-		restrictions: {
-			banned: string[];
-			global_penalty: string[];
-			points: {
-				[key: string]: string;
-			};
-			restricted: string[];
-			universal_faction_cost: {
-				[key: string]: string;
-			};
-		};
+		restrictions: CardRestrictions;
 		num_extra_faces: number;
-		faces: unknown[];
+		faces: CardFace[];
 	};
 	relationships: Relationships;
 	links: Links;
@@ -495,7 +485,7 @@ export interface Set {
 }
 
 export interface Side {
-	id: string;
+	id: SidesIds;
 	type: 'sides';
 	attributes: {
 		name: string;

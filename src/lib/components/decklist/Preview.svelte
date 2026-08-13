@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Decklist, FactionIds } from "$lib/types";
+    import type { Decklist } from "$lib/types";
     import Icon from "$lib/components/Icon.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -19,7 +19,7 @@
         <Icon
             name={decklist.attributes.faction_id}
             size="md"
-            theme={decklist.attributes.faction_id as FactionIds}
+            theme={decklist.attributes.faction_id}
         />
     </span>
 

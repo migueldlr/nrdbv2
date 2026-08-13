@@ -1,6 +1,6 @@
 <script lang="ts">
     import { type Snippet } from "svelte";
-    import type { FactionIds, Card as TCard, Printing } from "$lib/types";
+    import type { Card as TCard, Printing } from "$lib/types";
     import CardImage from "./CardImage.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
     import Influence from "../Influence.svelte";
@@ -29,7 +29,7 @@
             <Influence
                 count={quantity}
                 total={true}
-                theme={card.attributes.faction_id as FactionIds}
+                theme={card.attributes.faction_id}
             />
         {/if}
         {@render content?.()}

@@ -4,7 +4,6 @@
     import Icon from "./Icon.svelte";
     import { tooltip } from "$lib/actions";
     import { factions, card_types } from "$lib/i18n";
-    import type { FactionIds } from "$lib/types";
     import Influence from "./Influence.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -55,7 +54,7 @@
                             <Influence
                                 text={true}
                                 count={card.attributes.influence_cost}
-                                theme={card.attributes.faction_id as FactionIds}
+                                theme={card.attributes.faction_id}
                                 total={true}
                             />
                         </span>
@@ -76,9 +75,9 @@
                         <Icon
                             name={card.attributes.faction_id}
                             size="sm"
-                            theme={card.attributes.faction_id as FactionIds}
+                            theme={card.attributes.faction_id}
                         />
-                        {factions[card.attributes.faction_id as FactionIds]}
+                        {factions[card.attributes.faction_id]}
                     </a>
                 </td>
                 <td>

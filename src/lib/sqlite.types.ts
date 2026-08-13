@@ -1,5 +1,7 @@
 // Types for SQLite database rows.
 
+import type { CardTypeIds, FactionIds, SidesIds } from './shared.types';
+
 export interface CardCycleRow {
 	id: string;
 	name: string;
@@ -55,18 +57,18 @@ export interface CardSubtypeRow {
 }
 
 export interface CardTypeRow {
-	id: string;
+	id: CardTypeIds;
 	name: string;
 	created_at: string;
 	updated_at: string;
-	side_id: string;
+	side_id: SidesIds;
 }
 
 export interface FactionRow {
-	id: string;
+	id: FactionIds;
 	is_mini: boolean;
 	name: string;
-	side_id: string;
+	side_id: SidesIds;
 	created_at: string;
 	updated_at: string;
 	description: string | null;
@@ -111,7 +113,7 @@ export interface RestrictionRow {
 }
 
 export interface SideRow {
-	id: string;
+	id: SidesIds;
 	name: string;
 	created_at: string;
 	updated_at: string;
@@ -135,9 +137,9 @@ export type UnifiedCardRow = {
 	id: string;
 	title: string;
 	stripped_title: string;
-	card_type_id: string;
-	side_id: string;
-	faction_id: string;
+	card_type_id: CardTypeIds;
+	side_id: SidesIds;
+	faction_id: FactionIds;
 	advancement_requirement: number | null;
 	agenda_points: number | null;
 	base_link: number | null;
@@ -234,9 +236,9 @@ export type UnifiedPrintingRow = {
 	advancement_requirement: number | null;
 	agenda_points: number | null;
 	base_link: number | null;
-	card_type_id: string;
+	card_type_id: CardTypeIds;
 	cost: number | null;
-	faction_id: string;
+	faction_id: FactionIds;
 	gains_subroutines: number;
 	influence_cost: number | null;
 	interrupt: number;
@@ -252,7 +254,7 @@ export type UnifiedPrintingRow = {
 	pronunciation_approximation: string | null;
 	pronunciation_ipa: string | null;
 	recurring_credits_provided: number | null;
-	side_id: string;
+	side_id: SidesIds;
 	strength: number | null;
 	stripped_text: string | null;
 	stripped_title: string;

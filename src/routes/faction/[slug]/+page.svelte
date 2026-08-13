@@ -9,7 +9,7 @@
     import DecklistItem from "$lib/components/decklist/Item.svelte";
     import { tooltip } from "$lib/actions";
     import Button from "$lib/components/ui/Button.svelte";
-    import type { Card, Decklist, FactionIds, SidesIds } from "$lib/types";
+    import type { Card, Decklist } from "$lib/types";
     import { createHref } from "$lib/decklist_params";
 
     interface Props {
@@ -35,8 +35,8 @@
     <Button
         href={localizeHref(
             createHref({
-                side: data.faction.attributes.side_id as SidesIds,
-                factions: [data.faction.id as FactionIds],
+                side: data.faction.attributes.side_id,
+                factions: [data.faction.id],
             }),
         )}
         class="button"
@@ -61,8 +61,7 @@
                     <Button
                         href={localizeHref(
                             createHref({
-                                side: data.faction.attributes
-                                    .side_id as SidesIds,
+                                side: data.faction.attributes.side_id,
                                 identity: identity.id,
                             }),
                         )}>Create deck with this identity</Button
