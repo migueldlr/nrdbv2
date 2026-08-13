@@ -103,7 +103,7 @@
                 platform.toLowerCase().includes("mac");
 
             const is_find =
-                (mac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === "f";
+                (mac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === "k";
 
             if (is_find) {
                 if (document.activeElement === search_input) return;
