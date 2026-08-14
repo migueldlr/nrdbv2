@@ -19,6 +19,7 @@
         display: flex;
         flex-direction: row;
         gap: 0.5rem;
+        z-index: 1000;
     }
 
     .debug :where(button, details) {

@@ -2,9 +2,9 @@
     import type { Card, Decklist } from "$lib/types";
     import DecklistSummary from "$lib/components/decklist/Summary.svelte";
     import DecklistBreakdown from "$lib/components/decklist/Breakdown.svelte";
+    import DecklistTiles from "$lib/components/decklist/Tiles.svelte";
     import Factions from "$lib/components/Factions.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
-    import DecklistPreview from "$lib/components/decklist/Preview.svelte";
     import Container from "$lib/components/Container.svelte";
     import Ghost from "$lib/components/Ghost.svelte";
 
@@ -15,7 +15,10 @@
                 decklist: Decklist;
                 cards: Card[];
             }>;
-            decklists: Promise<Decklist[]>;
+            decklists: Promise<{
+                decklist: Decklist;
+                cards?: Card[];
+            }[]>;
         };
     }
 
@@ -50,17 +53,11 @@
             {#await data.decklists}
                 <ul class="home__decks">
                     {#each Array(5) as _}
-                        <li><Ghost aspect="6/1" /></li>
+                        <li><Ghost aspect="5/2" /></li>
                     {/each}
                 </ul>
-            {:then decklists}
-                <ul class="home__decks">
-                    {#each decklists as decklist (decklist.id)}
-                        <li>
-                            <DecklistPreview {decklist} />
-                        </li>
-                    {/each}
-                </ul>
+            {:then decklist_tiles}
+                <DecklistTiles tiles={decklist_tiles} />
             {:catch error}
                 <p class="home__error">
                     Error loading decklists: {error.message}
@@ -73,7 +70,7 @@
 <style>
     .home {
         display: grid;
-        grid-template-columns: 3fr 1fr;
+        grid-template-columns: 5fr 2fr;
         gap: 2rem;
         margin-top: 2rem;
     }
