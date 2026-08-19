@@ -4,105 +4,91 @@ import {
 	export_format,
 	/* print, download_file, */ validate_markdown
 } from './utils';
-import { createMockCard, create_mock_deck } from './test-helpers';
+import { createMockCard, createMockPrinting, create_mock_deck } from './test-helpers';
 import type { FileFormat } from './types';
 // import { format } from './paraglide/messages';
-import { NRDB_IMAGE_URL /* NRDB_API_URL */ } from '$lib/constants';
 
 describe('getHighResImage', () => {
-	it('should return NSG image URL for elevation cycle cards', () => {
-		const card = createMockCard('1', 'Test Card', ['elevation', 'other'], {
-			latest_printing_id: 'print123'
-		});
-
-		const result = getHighResImage(card);
-		expect(result).toBe(`${NRDB_IMAGE_URL}/xlarge/print123.webp`);
-	});
-
-	it('should return NSG image URL for liberation cycle cards', () => {
-		const card = createMockCard('1', 'Test Card', ['liberation'], {
-			latest_printing_id: 'print123'
-		});
-
-		const result = getHighResImage(card);
-		expect(result).toBe(`${NRDB_IMAGE_URL}/xlarge/print123.webp`);
-	});
-
-	it('should return NSG image URL for borealis cycle cards', () => {
-		const card = createMockCard('1', 'Test Card', ['borealis'], {
-			latest_printing_id: 'print123'
-		});
-
-		const result = getHighResImage(card);
-		expect(result).toBe(`${NRDB_IMAGE_URL}/xlarge/print123.webp`);
-	});
-
-	it('should return NSG image URL for ashes cycle cards', () => {
-		const card = createMockCard('1', 'Test Card', ['ashes'], {
-			latest_printing_id: 'print123'
-		});
-
-		const result = getHighResImage(card);
-		expect(result).toBe(`${NRDB_IMAGE_URL}/xlarge/print123.webp`);
-	});
-
-	it('should return NSG image URL for system_gateway cycle cards', () => {
-		const card = createMockCard('1', 'Test Card', ['system_gateway'], {
-			latest_printing_id: 'print123'
-		});
-
-		const result = getHighResImage(card);
-		expect(result).toBe(`${NRDB_IMAGE_URL}/xlarge/print123.webp`);
-	});
-
-	it('should return a small JPG when requested for an NSG card', () => {
-		const card = createMockCard('1', 'Test Card', ['system_gateway'], {
-			latest_printing_id: 'print123'
-		});
-
-		const result = getHighResImage(card, 'small');
-		expect(result).toBe(`${NRDB_IMAGE_URL}/small/print123.jpg`);
-	});
-
-	it('should return NSG image URL when card has multiple cycles including NSG cycle', () => {
-		const card = createMockCard('1', 'Test Card', ['core', 'elevation', 'other'], {
-			latest_printing_id: 'print123'
-		});
-
-		const result = getHighResImage(card);
-		expect(result).toBe(`${NRDB_IMAGE_URL}/xlarge/print123.webp`);
-	});
-
-	it('should return classic NRDB image URL for non-NSG cycle cards', () => {
+	it('returns a card xlarge image by default when available', () => {
 		const card = createMockCard('1', 'Test Card', ['core'], {
 			latest_printing_images: {
 				nrdb_classic: {
-					tiny: 'tiny-url',
-					small: 'small-url',
-					medium: 'medium-url',
-					large: 'large-url'
+					tiny: 'card-tiny',
+					small: 'card-small',
+					medium: 'card-medium',
+					large: 'card-large',
+					xlarge: 'card-xlarge'
 				}
 			}
 		});
 
-		const result = getHighResImage(card);
-		expect(result).toBe('large-url');
+		expect(getHighResImage(card)).toBe('card-xlarge');
 	});
 
-	it('should return classic NRDB image URL for empty card_cycle_ids', () => {
-		const card = createMockCard('1', 'Test Card', [], {
+	it('returns the requested card image size', () => {
+		const card = createMockCard('1', 'Test Card', ['core'], {
 			latest_printing_images: {
 				nrdb_classic: {
-					tiny: 'tiny-url',
-					small: 'small-url',
-					medium: 'medium-url',
-					large: 'large-url'
+					tiny: 'card-tiny',
+					small: 'card-small',
+					medium: 'card-medium',
+					large: 'card-large',
+					xlarge: 'card-xlarge'
 				}
 			}
 		});
 
-		const result = getHighResImage(card);
-		expect(result).toBe('large-url');
+		expect(getHighResImage(card, 'small')).toBe('card-small');
+	});
+
+	it('returns a printing xlarge image by default when available', () => {
+		const card = createMockCard('1', 'Test Card', ['core']);
+		const printing = createMockPrinting(card, 'print123', {
+			images: {
+				nrdb_classic: {
+					tiny: 'printing-tiny',
+					small: 'printing-small',
+					medium: 'printing-medium',
+					large: 'printing-large',
+					xlarge: 'printing-xlarge'
+				}
+			}
+		});
+
+		expect(getHighResImage(printing)).toBe('printing-xlarge');
+	});
+
+	it('returns the requested printing image size', () => {
+		const card = createMockCard('1', 'Test Card', ['core']);
+		const printing = createMockPrinting(card, 'print123', {
+			images: {
+				nrdb_classic: {
+					tiny: 'printing-tiny',
+					small: 'printing-small',
+					medium: 'printing-medium',
+					large: 'printing-large',
+					xlarge: 'printing-xlarge'
+				}
+			}
+		});
+
+		expect(getHighResImage(printing, 'medium')).toBe('printing-medium');
+	});
+
+	it('falls back to large by default when xlarge metadata is absent', () => {
+		const card = createMockCard('1', 'Test Card', ['core']);
+		const printing = createMockPrinting(card, 'print123', {
+			images: {
+				nrdb_classic: {
+					tiny: 'printing-tiny',
+					small: 'printing-small',
+					medium: 'printing-medium',
+					large: 'printing-large'
+				}
+			}
+		});
+
+		expect(getHighResImage(printing)).toBe('printing-large');
 	});
 });
 
