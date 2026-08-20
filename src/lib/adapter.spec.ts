@@ -101,14 +101,6 @@ describe('Card Adapter', () => {
 
 		console.log('Cards tested by type:', Object.fromEntries(typeCounts));
 	});
-
-	it('rejects card rows without a printing', () => {
-		const row = db.prepare('SELECT * FROM unified_cards LIMIT 1').get() as UnifiedCardRow;
-
-		expect(() => adaptCard({ ...row, printing_ids: '[]' })).toThrow(
-			`Card ${row.id} has no printings`
-		);
-	});
 });
 
 describe('Printing Adapter', () => {

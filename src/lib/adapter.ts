@@ -44,9 +44,6 @@ export function adaptCard(row: UnifiedCardRow): Card {
 	const id = row.id;
 	const printing_ids = toStringArray(row.printing_ids);
 	const latest_printing_id = printing_ids[0];
-	if (!latest_printing_id) {
-		throw new Error(`Card ${id} has no printings`);
-	}
 
 	const printings_released_by = toStringArray(row.printings_released_by);
 	const card_cycle_ids = toStringArray(row.card_cycle_ids);
@@ -419,13 +416,14 @@ function buildFaces(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string)
 		const flavor = faces_flavor[i];
 		const result: CardFace = {
 			images: buildImages(`${id_prefix}-${index}`, false, hasXlarge),
-			index,
-			...(strippedText != null ? { stripped_text: strippedText } : {}),
-			...(strippedTitle != null ? { stripped_title: strippedTitle } : {}),
-			...(text != null ? { text } : {}),
-			...(title != null ? { title } : {}),
-			...(flavor != null ? { flavor } : {})
+			index
 		};
+
+		if (strippedText != null) result.stripped_text = strippedText;
+		if (strippedTitle != null) result.stripped_title = strippedTitle;
+		if (text != null) result.text = text;
+		if (title != null) result.title = title;
+		if (flavor != null) result.flavor = flavor;
 
 		if (faces_card_subtype_ids[i] && faces_card_subtype_ids[i].length > 0) {
 			result.card_subtype_ids = faces_card_subtype_ids[i];

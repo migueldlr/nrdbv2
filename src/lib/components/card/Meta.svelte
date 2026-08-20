@@ -1,13 +1,13 @@
 <script lang="ts">
     import { type Snippet } from "svelte";
-    import type { Card as TCard, Printing } from "$lib/types";
+    import type { Card, Printing } from "$lib/types";
     import CardImage from "./CardImage.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
     import Influence from "../Influence.svelte";
 
     interface Props {
         children?: Snippet;
-        card: TCard | Printing;
+        card: Card | Printing;
         quantity?: number;
         content?: Snippet;
         title?: boolean;

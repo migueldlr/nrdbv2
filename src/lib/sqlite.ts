@@ -55,6 +55,7 @@ export const check_sqlite_db_populated = async (): Promise<boolean> => {
 			...REQUIRED_TABLES
 		);
 		console.info(`[SQLITE] Found ${rows.length} of ${REQUIRED_TABLES.length} required tables`);
+		// TODO: Validate that every card has a printing
 		return rows.length === REQUIRED_TABLES.length;
 	} catch (error) {
 		console.error('[SQLITE] Failed to inspect the local database schema:', error);
