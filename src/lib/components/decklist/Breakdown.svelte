@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Card, Decklist, FactionIds } from '$lib/types';
+	import type { Card, Decklist } from '$lib/types';
 	import { group_cards_by_type, card_quantity } from '$lib/utils';
 	import { card_types } from '$lib/i18n';
 	import { tooltip } from '$lib/actions';
@@ -33,10 +33,10 @@
 						<li>
 							<a href={localizeHref(`/card/${card.id}`)} use:tooltip={card}>
 								{decklist.attributes.card_slots[card.id]}&times; {card.attributes.title}
-								{#if card.attributes.faction_id !== identity!.attributes.faction_id}
+								{#if card.attributes.faction_id !== identity!.attributes.faction_id && card.attributes.influence_cost !== null}
 									<Influence 
 										count={card.attributes.influence_cost} 
-										theme={card.attributes.faction_id as FactionIds} 
+										theme={card.attributes.faction_id}
 									/>
 								{/if}
 							</a>

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Card, FactionIds } from '$lib/types';
+	import type { FactionIds } from '$lib/types';
 
 	interface Props {
-		count: Card['attributes']['influence_cost'];
+		count: number;
 		inline?: boolean;
 		text?: boolean;
 		total?: boolean;

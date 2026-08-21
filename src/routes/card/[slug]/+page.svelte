@@ -4,7 +4,7 @@
     import Meta from "$lib/components/Meta.svelte";
     import CardMeta from "$lib/components/card/Meta.svelte";
     import CardImage from "$lib/components/card/CardImage.svelte";
-    import type { CardTypeIds, CardSubTypeIds, FactionIds } from "$lib/types";
+    import type { CardSubTypeIds } from "$lib/types";
     import Review from "$lib/components/review/Item.svelte";
     import Header from "$lib/components/Header.svelte";
     import Icon from "$lib/components/Icon.svelte";
@@ -88,10 +88,7 @@
                                     name={data.card.attributes.card_type_id}
                                     size="sm"
                                 />
-                                {card_types[
-                                    data.card.attributes
-                                        .card_type_id as CardTypeIds
-                                ]}
+                                {card_types[data.card.attributes.card_type_id]}
                             </span>
                         </td>
                     </tr>
@@ -128,21 +125,20 @@
                                         size="sm"
                                     />
                                 </span>
-                                {factions[
-                                    data.card.attributes
-                                        .faction_id as FactionIds
-                                ]}
+                                {factions[data.card.attributes.faction_id]}
                             </a>
                         </td>
                     </tr>
-                    <tr>
-                        <td>Influence</td>
-                        <td>
-                            <Influence
-                                count={data.card.attributes.influence_cost}
-                            />
-                        </td>
-                    </tr>
+                    {#if data.card.attributes.influence_cost !== null}
+                        <tr>
+                            <td>Influence</td>
+                            <td>
+                                <Influence
+                                    count={data.card.attributes.influence_cost}
+                                />
+                            </td>
+                        </tr>
+                    {/if}
                     <tr>
                         <td>Cost</td>
                         <td>
@@ -166,11 +162,15 @@
                 </tbody>
             </table>
             <div>
-                <FormatText text={data.card.attributes.text} />
-                <br />
-                <hr />
-                <br />
-                {#if data.printings.length && data.printings[0]?.attributes?.flavor}
+                {#if data.card.attributes.text}
+                    <FormatText text={data.card.attributes.text} />
+                {/if}
+                {#if data.card.attributes.text && data.printings[0]?.attributes.flavor}
+                    <br />
+                    <hr />
+                    <br />
+                {/if}
+                {#if data.printings[0]?.attributes.flavor}
                     <p>Flavor: {data.printings[0].attributes.flavor}</p>
                 {/if}
             </div>

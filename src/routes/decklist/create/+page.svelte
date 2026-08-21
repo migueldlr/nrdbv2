@@ -35,7 +35,7 @@
             catalog.factions.some(
                 (f) => f.id === identity.attributes.faction_id,
             )
-            ? (identity.attributes.faction_id as FactionIds)
+            ? identity.attributes.faction_id
             : null,
     );
 </script>

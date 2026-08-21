@@ -12,7 +12,8 @@ import type {
 	CardSubtype,
 	CardPool,
 	Restriction,
-	Snapshot
+	Snapshot,
+	CardFace
 } from './api.types.js';
 import type {
 	UnifiedCardRow,
@@ -42,7 +43,7 @@ const NO_XLARGE_CYCLES = [
 export function adaptCard(row: UnifiedCardRow): Card {
 	const id = row.id;
 	const printing_ids = toStringArray(row.printing_ids);
-	const latest_printing_id = printing_ids.length > 0 ? printing_ids[0] : null;
+	const latest_printing_id = printing_ids[0];
 
 	const printings_released_by = toStringArray(row.printings_released_by);
 	const card_cycle_ids = toStringArray(row.card_cycle_ids);
@@ -62,9 +63,7 @@ export function adaptCard(row: UnifiedCardRow): Card {
 			layout_id: row.layout_id,
 			printings_released_by: printings_released_by,
 			latest_printing_id,
-			latest_printing_images: latest_printing_id
-				? buildImages(latest_printing_id, hasNarrative, hasXlarge)
-				: null
+			latest_printing_images: buildImages(latest_printing_id, hasNarrative, hasXlarge)
 		},
 		relationships: {
 			card_cycles: buildRel('card_cycles', toStringArray(row.card_cycle_ids).join(',')),
@@ -85,7 +84,7 @@ export function adaptCard(row: UnifiedCardRow): Card {
 		links: {
 			self: `${NRDB_API_URL}/cards/${id}`
 		}
-	} as Card;
+	};
 }
 
 export function adaptPrinting(row: UnifiedPrintingRow): Printing {
@@ -145,7 +144,7 @@ export function adaptPrinting(row: UnifiedPrintingRow): Printing {
 		links: {
 			self: `${NRDB_API_URL}/printings/${id}`
 		}
-	} as Printing;
+	};
 }
 
 export function adaptCardCycle(row: CardCycleRow): Cycle {
@@ -158,7 +157,7 @@ export function adaptCardCycle(row: CardCycleRow): Cycle {
 			name: row.name,
 			date_release: row.date_release || '',
 			legacy_code: row.legacy_code || '',
-			card_set_ids: parseJsonWithDefault(row.card_set_ids) as string[],
+			card_set_ids: toStringArray(row.card_set_ids),
 			first_printing_id: row.first_printing_id || '',
 			position: row.position || 0,
 			released_by: row.released_by || '',
@@ -173,7 +172,7 @@ export function adaptCardCycle(row: CardCycleRow): Cycle {
 		links: {
 			self: `${NRDB_API_URL}/card_cycles/${id}`
 		}
-	} as Cycle;
+	};
 }
 
 export function adaptCardPool(row: CardPoolRow): CardPool {
@@ -185,8 +184,8 @@ export function adaptCardPool(row: CardPoolRow): CardPool {
 		attributes: {
 			name: row.name,
 			format_id: row.format_id,
-			card_cycle_ids: parseJsonWithDefault(row.card_cycle_ids) as string[],
-			num_cards: row.num_cards,
+			card_cycle_ids: toStringArray(row.card_cycle_ids),
+			num_cards: row.num_cards || 0,
 			updated_at: formatTimestamp(row.updated_at) || ''
 		},
 		relationships: {
@@ -200,7 +199,7 @@ export function adaptCardPool(row: CardPoolRow): CardPool {
 		links: {
 			self: `${NRDB_API_URL}/card_pools/${id}`
 		}
-	} as CardPool;
+	};
 }
 
 export function adaptCardSet(row: CardSetRow): Set {
@@ -231,7 +230,7 @@ export function adaptCardSet(row: CardSetRow): Set {
 		links: {
 			self: `${NRDB_API_URL}/card_sets/${id}`
 		}
-	} as Set;
+	};
 }
 
 export function adaptFaction(row: FactionRow): Faction {
@@ -256,7 +255,7 @@ export function adaptFaction(row: FactionRow): Faction {
 		links: {
 			self: `${NRDB_API_URL}/factions/${id}`
 		}
-	} as Faction;
+	};
 }
 
 export function adaptFormat(row: FormatRow): Format {
@@ -268,8 +267,8 @@ export function adaptFormat(row: FormatRow): Format {
 		attributes: {
 			name: row.name,
 			active_snapshot_id: row.active_snapshot_id,
-			snapshot_ids: parseJsonWithDefault(row.snapshot_ids) as string[],
-			restriction_ids: parseJsonWithDefault(row.restriction_ids) as string[],
+			snapshot_ids: toStringArray(row.snapshot_ids),
+			restriction_ids: toStringArray(row.restriction_ids),
 			active_card_pool_id: row.active_card_pool_id || '',
 			active_restriction_id: row.active_restriction_id || null, // null instead of '' based on API format
 			updated_at: formatTimestamp(row.updated_at) || ''
@@ -282,7 +281,7 @@ export function adaptFormat(row: FormatRow): Format {
 		links: {
 			self: `${NRDB_API_URL}/formats/${id}`
 		}
-	} as Format;
+	};
 }
 
 export function adaptSide(row: SideRow): Side {
@@ -291,7 +290,7 @@ export function adaptSide(row: SideRow): Side {
 		type: 'sides',
 		attributes: {
 			name: row.name,
-			updated_at: formatTimestamp(row.updated_at)
+			updated_at: formatTimestamp(row.updated_at) || ''
 		},
 		relationships: {
 			factions: buildRel('factions', row.id, 'side_id'),
@@ -303,7 +302,7 @@ export function adaptSide(row: SideRow): Side {
 		links: {
 			self: `${NRDB_API_URL}/sides/${row.id}`
 		}
-	} as Side;
+	};
 }
 
 function toStringArray(val: unknown): string[] {
@@ -341,26 +340,20 @@ function formatTimestamp(dateStr: string | null): string | null {
 	return dateStr;
 }
 
-// Helper to transform ["key=value"] into { "key": "value" }
-function parseKVArrayToObject(val: unknown): Record<string, unknown> {
+// Unified card views encode numeric maps as JSON arrays of "key=value" strings.
+function parseKVArrayToNumbers(val: unknown): Record<string, number> {
 	const parsed = parseJsonWithDefault(val);
-	if (Array.isArray(parsed) && parsed.length === 0) return {};
-	if (Array.isArray(parsed)) {
-		return parsed.reduce(
-			(acc: Record<string, unknown>, curr: unknown) => {
-				if (typeof curr === 'string' && curr.includes('=')) {
-					const [key, value] = curr.split('=');
+	if (!Array.isArray(parsed)) return {};
 
-					// Try parsing the value as a number if appropriate
-					const num = Number(value);
-					acc[key] = !isNaN(num) ? num : value;
-				}
-				return acc;
-			},
-			{} as Record<string, unknown>
-		);
+	const result: Record<string, number> = {};
+	for (const entry of parsed) {
+		if (typeof entry !== 'string' || !entry.includes('=')) continue;
+
+		const [key, value] = entry.split('=');
+		const num = Number(value);
+		if (!isNaN(num)) result[key] = num;
 	}
-	return parsed as Record<string, unknown>;
+	return result;
 }
 
 function buildImages(id_prefix: string, hasNarrative: boolean, hasXlarge: boolean) {
@@ -384,7 +377,7 @@ function buildImages(id_prefix: string, hasNarrative: boolean, hasXlarge: boolea
 	};
 }
 
-function buildFaces(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string | null) {
+function buildFaces(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string): CardFace[] {
 	const released_by_check =
 		('released_by' in row ? row.released_by === 'null_signal_games' : false) ||
 		toStringArray(row.printings_released_by).includes('null_signal_games');
@@ -416,15 +409,21 @@ function buildFaces(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string 
 	) as (number | null)[];
 
 	return face_indices.map((index: number, i: number) => {
-		const result: Record<string, unknown> = {
-			images: id_prefix ? buildImages(`${id_prefix}-${index}`, false, hasXlarge) : null,
-			index,
-			stripped_text: faces_stripped_text[i] ?? null,
-			stripped_title: faces_stripped_title[i] ?? null,
-			text: faces_text[i] ?? null,
-			title: faces_title[i] ?? null,
-			flavor: faces_flavor[i] ?? null
+		const strippedText = faces_stripped_text[i];
+		const strippedTitle = faces_stripped_title[i];
+		const text = faces_text[i];
+		const title = faces_title[i];
+		const flavor = faces_flavor[i];
+		const result: CardFace = {
+			images: buildImages(`${id_prefix}-${index}`, false, hasXlarge),
+			index
 		};
+
+		if (strippedText != null) result.stripped_text = strippedText;
+		if (strippedTitle != null) result.stripped_title = strippedTitle;
+		if (text != null) result.text = text;
+		if (title != null) result.title = title;
+		if (flavor != null) result.flavor = flavor;
 
 		if (faces_card_subtype_ids[i] && faces_card_subtype_ids[i].length > 0) {
 			result.card_subtype_ids = faces_card_subtype_ids[i];
@@ -432,19 +431,11 @@ function buildFaces(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string 
 
 		if (faces_display_subtypes[i]) {
 			result.display_subtypes = faces_display_subtypes[i];
-		} else {
-			result.display_subtypes = null;
 		}
 
 		if (faces_copy_quantity[i]) {
 			result.copy_quantity = faces_copy_quantity[i];
 		}
-
-		Object.keys(result).forEach((key) => {
-			if (result[key] === undefined || result[key] === null) {
-				delete result[key];
-			}
-		});
 
 		if (faces_base_link[i] !== undefined && faces_base_link[i] !== null) {
 			result.base_link = String(faces_base_link[i]);
@@ -454,7 +445,7 @@ function buildFaces(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string 
 	});
 }
 
-function getSharedAttributes(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string | null) {
+function getSharedAttributes(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix: string) {
 	const advancement_requirement =
 		row.advancement_requirement === -1
 			? 'X'
@@ -492,14 +483,14 @@ function getSharedAttributes(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix
 		card_subtype_ids,
 		display_subtypes: row.display_subtypes,
 		attribution: row.attribution,
-		updated_at: formatTimestamp(row.updated_at),
-		format_ids: parseJsonWithDefault(row.format_ids),
-		card_pool_ids: parseJsonWithDefault(row.card_pool_ids),
-		snapshot_ids: parseJsonWithDefault(row.snapshot_ids),
-		card_cycle_ids: parseJsonWithDefault(row.card_cycle_ids),
-		card_cycle_names: parseJsonWithDefault(row.card_cycle_names),
-		card_set_ids: parseJsonWithDefault(row.card_set_ids),
-		card_set_names: parseJsonWithDefault(row.card_set_names),
+		updated_at: formatTimestamp(row.updated_at) || '',
+		format_ids: toStringArray(row.format_ids),
+		card_pool_ids: toStringArray(row.card_pool_ids),
+		snapshot_ids: toStringArray(row.snapshot_ids),
+		card_cycle_ids: toStringArray(row.card_cycle_ids),
+		card_cycle_names: toStringArray(row.card_cycle_names),
+		card_set_ids: toStringArray(row.card_set_ids),
+		card_set_names: toStringArray(row.card_set_names),
 		designed_by: row.designed_by,
 		narrative_text: row.narrative_text,
 		pronouns: row.pronouns,
@@ -529,11 +520,11 @@ function getSharedAttributes(row: UnifiedCardRow | UnifiedPrintingRow, id_prefix
 			trash_ability: Boolean(row.trash_ability)
 		},
 		restrictions: {
-			banned: parseJsonWithDefault(row.restrictions_banned),
-			global_penalty: parseJsonWithDefault(row.restrictions_global_penalty),
-			points: parseKVArrayToObject(row.restrictions_points),
-			restricted: parseJsonWithDefault(row.restrictions_restricted),
-			universal_faction_cost: parseKVArrayToObject(row.restrictions_universal_faction_cost)
+			banned: toStringArray(row.restrictions_banned),
+			global_penalty: toStringArray(row.restrictions_global_penalty),
+			points: parseKVArrayToNumbers(row.restrictions_points),
+			restricted: toStringArray(row.restrictions_restricted),
+			universal_faction_cost: parseKVArrayToNumbers(row.restrictions_universal_faction_cost)
 		},
 		faces: buildFaces(row, id_prefix)
 	};
@@ -556,7 +547,7 @@ export function adaptIllustrator(row: IllustratorRow): Illustrator {
 		links: {
 			self: `${NRDB_API_URL}/illustrators/${id}`
 		}
-	} as Illustrator;
+	};
 }
 
 export function adaptCardType(row: CardTypeRow): CardType {
@@ -577,7 +568,7 @@ export function adaptCardType(row: CardTypeRow): CardType {
 		links: {
 			self: `${NRDB_API_URL}/card_types/${id}`
 		}
-	} as CardType;
+	};
 }
 
 export function adaptCardSetType(row: CardSetTypeRow): CardSetType {
@@ -597,7 +588,7 @@ export function adaptCardSetType(row: CardSetTypeRow): CardSetType {
 		links: {
 			self: `${NRDB_API_URL}/card_set_types/${id}`
 		}
-	} as CardSetType;
+	};
 }
 
 export function adaptCardSubtype(row: CardSubtypeRow): CardSubtype {
@@ -617,7 +608,7 @@ export function adaptCardSubtype(row: CardSubtypeRow): CardSubtype {
 		links: {
 			self: `${NRDB_API_URL}/card_subtypes/${id}`
 		}
-	} as CardSubtype;
+	};
 }
 
 export function adaptRestriction(row: RestrictionRow): Restriction {
@@ -642,7 +633,7 @@ export function adaptRestriction(row: RestrictionRow): Restriction {
 			},
 			banned_subtypes: row.banned_subtypes ? JSON.parse(row.banned_subtypes) : [],
 			size: row.size || 0,
-			updated_at: formatTimestamp(row.updated_at) as string
+			updated_at: formatTimestamp(row.updated_at) || ''
 		},
 		relationships: {
 			format: {
@@ -666,13 +657,13 @@ export function adaptSnapshot(row: SnapshotRow): Snapshot {
 		attributes: {
 			format_id: row.format_id,
 			active: Boolean(row.active),
-			card_cycle_ids: parseJsonWithDefault(row.card_cycle_ids) as string[],
-			card_set_ids: parseJsonWithDefault(row.card_set_ids) as string[],
+			card_cycle_ids: toStringArray(row.card_cycle_ids),
+			card_set_ids: toStringArray(row.card_set_ids),
 			card_pool_id: row.card_pool_id,
 			restriction_id: row.restriction_id,
 			num_cards: row.num_cards || 0,
 			date_start: row.date_start,
-			updated_at: formatTimestamp(row.updated_at) as string
+			updated_at: formatTimestamp(row.updated_at) || ''
 		},
 		relationships: {
 			format: {
