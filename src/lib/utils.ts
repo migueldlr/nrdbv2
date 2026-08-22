@@ -1,6 +1,13 @@
-import type { Card, Decklist, FileFormat, CardGroup, Printing } from '$lib/types';
+import type {
+	Card,
+	CardGroup,
+	Decklist,
+	FileFormat,
+	NrdbClassicImages,
+	Printing
+} from '$lib/types';
 
-import { NRDB_API_URL, NRDB_IMAGE_URL } from '$lib/constants';
+import { NRDB_API_URL } from '$lib/constants';
 
 export const fetch_published_databases = (): Promise<string | null> => {
 	return fetch(`${NRDB_API_URL}/published_databases`)
@@ -26,38 +33,15 @@ export const fetch_published_databases = (): Promise<string | null> => {
 		});
 };
 
-export const getHighResImage = (
-	card: Card | Printing,
-	size?: 'small' | 'medium' | 'large' | 'xlarge'
-): string => {
-	// if the card includes one of the card cycles that are released by null signal games, use the nsg image
-	const nsgCardCycles = ['elevation', 'liberation', 'borealis', 'ashes', 'system_gateway'];
+export type ImageSize = 'small' | 'medium' | 'large' | 'xlarge';
 
-	const isPrinting = 'card_id' in card.attributes;
-	const printingId = isPrinting ? card.id : (card as Card).attributes.latest_printing_id;
+export const getHighResImage = (source: Card | Printing, size: ImageSize = 'xlarge'): string => {
+	const images: NrdbClassicImages['nrdb_classic'] =
+		source.type === 'cards'
+			? source.attributes.latest_printing_images.nrdb_classic
+			: source.attributes.images.nrdb_classic;
 
-	if (isPrinting) {
-		return `${NRDB_IMAGE_URL}/${size ?? 'large'}/${card.id}.jpg`;
-	}
-
-	const c = card as Card;
-
-	// If the card is from a NSG cycle, or doesn't have a NRDB classic image, use the NRDB image
-	if (nsgCardCycles.some((cycle) => c.attributes.card_cycle_ids.includes(cycle))) {
-		const requestedSize = size ?? 'xlarge';
-		// The CDN stores xlarge NSG images as webp and smaller sizes as jpg
-		const fileExtension = requestedSize === 'xlarge' ? 'webp' : 'jpg';
-		return `${NRDB_IMAGE_URL}/${requestedSize}/${printingId}.${fileExtension}`;
-	}
-
-	if (!c.attributes.latest_printing_images?.nrdb_classic) {
-		return `${NRDB_IMAGE_URL}/${size ?? 'large'}/${printingId}.jpg`;
-	}
-
-	return (
-		c.attributes.latest_printing_images.nrdb_classic[size ?? 'large'] ??
-		c.attributes.latest_printing_images.nrdb_classic.large
-	);
+	return images[size] ?? images.large;
 };
 
 export const group_cards_by_type = (cards: Card[]): CardGroup[] => {

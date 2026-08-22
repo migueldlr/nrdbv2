@@ -1,4 +1,4 @@
-import type { Card } from './types';
+import type { Card, Printing } from './types';
 
 /**
  * Helper function to create mock Card objects with all required properties.
@@ -109,6 +109,45 @@ export const createMockCard = (
 		decklists: { links: { related: '' } },
 		printings: { links: { related: '' } }
 	},
+	links: { self: '' }
+});
+
+export const createMockPrinting = (
+	card: Card,
+	id: string = card.attributes.latest_printing_id,
+	overrides: Partial<Printing['attributes']> = {}
+): Printing => ({
+	id,
+	type: 'printings',
+	attributes: {
+		...card.attributes,
+		card_id: card.id,
+		card_cycle_id: card.attributes.card_cycle_ids[0] ?? 'core',
+		card_cycle_name: card.attributes.card_cycle_names[0] ?? 'Core Set',
+		card_set_id: card.attributes.card_set_ids[0] ?? 'core',
+		card_set_name: card.attributes.card_set_names[0] ?? 'Core Set',
+		flavor: null,
+		display_illustrators: null,
+		illustrator_ids: [],
+		illustrator_names: [],
+		position: 1,
+		position_in_set: 1,
+		quantity: 3,
+		card_subtype_names: card.attributes.card_subtype_ids,
+		released_by: 'null_signal_games',
+		images: {
+			nrdb_classic: {
+				tiny: `https://card-images.netrunnerdb.com/v2/tiny/${id}.jpg`,
+				small: `https://card-images.netrunnerdb.com/v2/small/${id}.jpg`,
+				medium: `https://card-images.netrunnerdb.com/v2/medium/${id}.jpg`,
+				large: `https://card-images.netrunnerdb.com/v2/large/${id}.jpg`,
+				xlarge: `https://card-images.netrunnerdb.com/v2/xlarge/${id}.webp`
+			}
+		},
+		is_latest_printing: id === card.attributes.latest_printing_id,
+		...overrides
+	},
+	relationships: {},
 	links: { self: '' }
 });
 
