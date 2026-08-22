@@ -1,4 +1,18 @@
-import type { Card, Printing } from './types';
+import { NRDB_IMAGE_URL } from './constants';
+import type { Card, NrdbClassicImages, Printing } from './types';
+
+export const createMockImages = (
+	id: string,
+	{ xlarge = false }: { xlarge?: boolean } = {}
+): NrdbClassicImages => ({
+	nrdb_classic: {
+		tiny: `${NRDB_IMAGE_URL}/tiny/${id}.jpg`,
+		small: `${NRDB_IMAGE_URL}/small/${id}.jpg`,
+		medium: `${NRDB_IMAGE_URL}/medium/${id}.jpg`,
+		large: `${NRDB_IMAGE_URL}/large/${id}.jpg`,
+		...(xlarge ? { xlarge: `${NRDB_IMAGE_URL}/xlarge/${id}.webp` } : {})
+	}
+});
 
 /**
  * Helper function to create mock Card objects with all required properties.
@@ -92,14 +106,7 @@ export const createMockCard = (
 			universal_faction_cost: {}
 		},
 		latest_printing_id: id,
-		latest_printing_images: {
-			nrdb_classic: {
-				tiny: `https://card-images.netrunnerdb.com/v2/tiny/${id}.jpg`,
-				small: `https://card-images.netrunnerdb.com/v2/small/${id}.jpg`,
-				medium: `https://card-images.netrunnerdb.com/v2/medium/${id}.jpg`,
-				large: `https://card-images.netrunnerdb.com/v2/large/${id}.jpg`
-			}
-		},
+		latest_printing_images: createMockImages(id),
 		// Apply any overrides
 		...overrides
 	},
@@ -135,15 +142,7 @@ export const createMockPrinting = (
 		quantity: 3,
 		card_subtype_names: card.attributes.card_subtype_ids,
 		released_by: 'null_signal_games',
-		images: {
-			nrdb_classic: {
-				tiny: `https://card-images.netrunnerdb.com/v2/tiny/${id}.jpg`,
-				small: `https://card-images.netrunnerdb.com/v2/small/${id}.jpg`,
-				medium: `https://card-images.netrunnerdb.com/v2/medium/${id}.jpg`,
-				large: `https://card-images.netrunnerdb.com/v2/large/${id}.jpg`,
-				xlarge: `https://card-images.netrunnerdb.com/v2/xlarge/${id}.webp`
-			}
-		},
+		images: createMockImages(id, { xlarge: true }),
 		is_latest_printing: id === card.attributes.latest_printing_id,
 		...overrides
 	},

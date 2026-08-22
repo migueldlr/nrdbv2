@@ -23,6 +23,9 @@ export default mergeConfig(
 			projects: [
 				{
 					extends: './vite.config.ts',
+					optimizeDeps: {
+						include: ['@lucide/svelte/icons/x', 'bits-ui']
+					},
 					test: {
 						name: 'client',
 						browser: {
