@@ -18,7 +18,7 @@
 	display: grid;
 	grid-template-columns: var(--card-modal-art) minmax(0, 1fr);
 	width: calc(100% - 2 * var(--card-modal-inset));
-	max-width: 56rem;
+	max-width: calc(2 * var(--card-modal-art) + var(--card-modal-inset));
 	max-height: calc(100dvh - 2 * var(--card-modal-inset));
 	overflow-y: auto;
 	overscroll-behavior: contain;
