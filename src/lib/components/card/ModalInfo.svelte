@@ -1,20 +1,42 @@
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
-	import type { Card } from '$lib/types';
+	import { resolve } from '$app/paths';
+	import type { Card, Printing } from '$lib/types';
 	import RezCost from './RezCost.svelte';
 	import { getCardModalStats } from './modal-stats';
 	import FormatText from '$lib/components/FormatText.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import Influence from '$lib/components/Influence.svelte';
 	import { card_types } from '$lib/i18n';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	interface Props {
 		card: Card;
+		printing: Printing | null;
 	}
 
-	let { card }: Props = $props();
+	let { card, printing }: Props = $props();
 
-	const attributes = $derived(card.attributes);
+	const get_illustrator_credits = (printing: Printing) => {
+		const { display_illustrators, illustrator_ids, illustrator_names } = printing.attributes;
+		if (illustrator_names.length) {
+			return illustrator_names.map((name, index) => ({
+				name,
+				id: illustrator_ids[index]
+			}));
+		}
+		if (!display_illustrators) return [];
+
+		return [
+			{
+				name: display_illustrators,
+				id: illustrator_ids.length === 1 ? illustrator_ids[0] : undefined
+			}
+		];
+	};
+
+	const attributes = $derived(printing?.attributes ?? card.attributes);
+	const illustrators = $derived(printing ? get_illustrator_credits(printing) : []);
 	const uses_rez_cost = $derived(
 		attributes.card_type_id === 'ice' ||
 			attributes.card_type_id === 'asset' ||
@@ -62,10 +84,17 @@
 			: ''}
 	</Dialog.Description>
 
-	{#if attributes.text}
+	{#if attributes.text || printing?.attributes.flavor}
 		<hr />
 		<div class="card-modal__text">
-			<FormatText text={attributes.text} />
+			{#if attributes.text}
+				<FormatText text={attributes.text} />
+			{/if}
+			{#if printing && printing.attributes.flavor}
+				<div class="card-modal__flavor">
+					<FormatText text={printing.attributes.flavor} />
+				</div>
+			{/if}
 		</div>
 	{/if}
 
@@ -92,4 +121,36 @@
 			</span>
 		{/if}
 	</div>
+
+	{#if printing}
+		<hr />
+		<p class="card-modal__credits">
+			{#if illustrators.length}
+				Illustrated by
+				{#each illustrators as illustrator, index (illustrator.id ?? illustrator.name)}
+					{#if index > 0},
+					{/if}
+					{#if illustrator.id}
+						<a
+							href={localizeHref(
+								resolve('/illustrators/[slug]', { slug: illustrator.id })
+							)}
+						>
+							{illustrator.name}
+						</a>
+					{:else}
+						{illustrator.name}
+					{/if}
+				{/each}
+			{/if}
+			{#if illustrators.length}
+				&middot;
+			{/if}
+			<a
+				href={localizeHref(
+					resolve('/sets/[slug]', { slug: printing.attributes.card_set_id })
+				)}>{printing.attributes.card_set_name}</a
+			>&nbsp;#{printing.attributes.position_in_set}
+		</p>
+	{/if}
 </div>

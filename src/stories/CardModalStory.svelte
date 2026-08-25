@@ -8,11 +8,7 @@
 	}
 
 	let { card, open: initial_open = true }: Props = $props();
-	let open = $state(true);
-
-	$effect(() => {
-		open = initial_open;
-	});
+	let open = $derived(initial_open);
 
 	const handle_open_change = (value: boolean): void => {
 		open = value;

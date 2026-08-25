@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
 	import XIcon from '@lucide/svelte/icons/x';
-	import type { Card } from '$lib/types';
+	import type { Card, Printing } from '$lib/types';
+	import { getPrintingById } from '$lib/printings';
 	import CardImage from './CardImage.svelte';
 	import ModalInfo from './ModalInfo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -15,8 +16,33 @@
 	}
 
 	let { card, open, onOpenChange }: Props = $props();
+	let hydrated_printing = $state.raw<Printing | null>(null);
 
-	const attributes = $derived(card.attributes);
+	$effect(() => {
+		hydrated_printing = null;
+		if (!open) return;
+
+		let cancelled = false;
+		void (async () => {
+			try {
+				const printing = await getPrintingById(card.attributes.latest_printing_id);
+				if (!cancelled) {
+					hydrated_printing = printing;
+				}
+			} catch {
+				return;
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	});
+
+	const printing = $derived(
+		hydrated_printing?.id === card.attributes.latest_printing_id ? hydrated_printing : null
+	);
+	const attributes = $derived((printing ?? card).attributes);
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
@@ -28,11 +54,11 @@
 			style="--faction: var(--{attributes.faction_id}); --faction-contrast: var(--{attributes.faction_id}-contrast)"
 		>
 			<div class="card-modal__art">
-				<CardImage {card} loading="eager" href={null} />
+				<CardImage card={printing ?? card} loading="eager" href={null} />
 			</div>
 
 			<div class="card-modal__info">
-				<ModalInfo {card} />
+				<ModalInfo {card} {printing} />
 
 				<Dialog.Close class="card-modal__close">
 					<XIcon size={16} />
