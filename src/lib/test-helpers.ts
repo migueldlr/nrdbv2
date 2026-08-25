@@ -34,7 +34,7 @@ export const createMockCard = (
 	attributes: {
 		stripped_title: title.toLowerCase().replace(/[^a-z0-9]/g, ''),
 		title,
-		card_type_id: 'agenda',
+		card_type_id: 'operation',
 		side_id: 'corp',
 		faction_id: 'neutral_corp',
 		cost: '0',

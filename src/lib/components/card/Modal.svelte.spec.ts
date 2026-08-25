@@ -1,41 +1,64 @@
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi } from 'vitest';
-import { createMockCard } from '$lib/test-helpers';
+import { CARNIVORE, OFFWORLD_OFFICE, PING, SURE_GAMBLE } from '$lib/cards.fixture';
 import Modal from './Modal.svelte';
 
-const createCard = () =>
-	createMockCard('sure_gamble', 'Sure Gamble', ['system_gateway'], {
-		card_type_id: 'event',
-		cost: '5',
-		card_set_ids: ['system_gateway'],
-		card_set_names: ['System Gateway'],
-		latest_printing_id: '30030'
-	});
-
 describe('Card Modal', () => {
-	it('renders a supplied card and focuses the close button', async () => {
-		await render(Modal, {
-			card: createCard(),
-			open: true,
-			onOpenChange: () => {}
-		});
-
-		await expect.element(page.getByRole('button', { name: 'Close' })).toHaveFocus();
-	});
-
-	it('reports close interactions to its owner', async () => {
+	it('labels the dialog and closes from its initially focused button', async () => {
 		const onOpenChange = vi.fn();
 
 		await render(Modal, {
-			card: createCard(),
+			card: SURE_GAMBLE,
 			open: true,
 			onOpenChange
 		});
 
 		const close_button = page.getByRole('button', { name: 'Close' });
-		await expect.element(close_button).toBeVisible();
+		await expect.element(page.getByRole('dialog', { name: 'Sure Gamble' })).toBeVisible();
+		await expect.element(close_button).toHaveFocus();
+
 		close_button.element().dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		expect(onOpenChange).toHaveBeenCalledWith(false);
+	});
+
+	it('renders and announces agenda stats', async () => {
+		await render(Modal, {
+			card: OFFWORLD_OFFICE,
+			open: true,
+			onOpenChange: () => {}
+		});
+
+		await expect.element(page.getByText('4 / 2', { exact: true })).toBeVisible();
+		await expect
+			.element(page.getByText('Advancement requirement: 4 and agenda points: 2'))
+			.toBeInTheDocument();
+	});
+
+	it('renders and announces ice stats', async () => {
+		await render(Modal, {
+			card: PING,
+			open: true,
+			onOpenChange: () => {}
+		});
+
+		await expect.element(page.getByText('1 strength', { exact: true })).toBeVisible();
+		await expect.element(page.getByText('Cost: 2')).toBeInTheDocument();
+		await expect.element(page.getByText('Strength: 1')).toBeInTheDocument();
+	});
+
+	it('renders card text as separate paragraphs', async () => {
+		await render(Modal, {
+			card: CARNIVORE,
+			open: true,
+			onOpenChange: () => {}
+		});
+
+		const paragraphs = document.querySelectorAll('.card-modal__text p');
+		expect(Array.from(paragraphs, (paragraph) => paragraph.textContent)).toEqual([
+			'+1 [mu]',
+			'Access, once per turn → Trash 2 cards from your grip: Trash the card you are accessing.',
+			'Limit 1 console per player.'
+		]);
 	});
 });
