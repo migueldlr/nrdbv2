@@ -54,6 +54,19 @@
 		--shaper: light-dark(#4cb148, #4cb148);
 		--weyland_consortium: light-dark(#516751, #516751);
 
+		--adam-contrast: #000000;
+		--anarch-contrast: #000000;
+		--apex-contrast: light-dark(#ffffff, #000000);
+		--criminal-contrast: #ffffff;
+		--neutral_corp-contrast: #ffffff;
+		--neutral_runner-contrast: #000000;
+		--sunny_lebeau-contrast: #000000;
+		--haas_bioroid-contrast: #ffffff;
+		--jinteki-contrast: #ffffff;
+		--nbn-contrast: #000000;
+		--shaper-contrast: #000000;
+		--weyland_consortium-contrast: #ffffff;
+
 		/* States, namely for badges (and likely others */
 		--verified: #698146;
 	}
