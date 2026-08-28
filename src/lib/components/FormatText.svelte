@@ -10,23 +10,23 @@
     let { text }: Props = $props();
 
     const paragraph_array = $derived.by(() => {
-        const text_array = text.split(/(\[.*?\]|\n)/g);
+        const text_array = text.split(/(\[.*?\]|\r?\n)/g);
         let paragraphs: string[][] = [[]];
         let current_paragraph = 0;
 
         text_array.forEach((segment) => {
-            // Skip empty strings
-            if (segment.trim() === "") {
-                return;
-            }
-
-            if (segment === "\n") {
+            if (segment === "\n" || segment === "\r\n") {
                 // Skip adding a new paragraph if the segment is just a line break
                 if (paragraphs[current_paragraph]?.length > 0) {
                     paragraphs.push([]);
                     current_paragraph++;
                 }
-            } else if (segment === "[subroutine]") {
+            } else if (segment.trim() === "") {
+                return;
+            } else if (
+                segment === "[subroutine]" &&
+                paragraphs[current_paragraph]?.length > 0
+            ) {
                 paragraphs.push([segment]);
                 current_paragraph++;
             } else {
@@ -38,11 +38,7 @@
             }
         });
 
-        if (paragraphs[0].length === 1 && paragraphs[0][0] === "") {
-            paragraphs.shift();
-        }
-
-        return paragraphs;
+        return paragraphs.filter((paragraph) => paragraph.length > 0);
     });
 </script>
 

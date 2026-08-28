@@ -1,4 +1,4 @@
-import { createMockCard } from './test-helpers';
+import { createMockCard, createMockImages } from './test-helpers';
 
 const ALL_CARD_POOL_IDS = [
 	'core',
@@ -15,7 +15,17 @@ export const PRECISION_DESIGN = createMockCard(
 		side_id: 'corp',
 		faction_id: 'haas_bioroid',
 		card_type_id: 'corp_identity',
-		card_pool_ids: ALL_CARD_POOL_IDS
+		card_pool_ids: ALL_CARD_POOL_IDS,
+		cost: null,
+		influence_cost: null,
+		minimum_deck_size: 40,
+		influence_limit: 15,
+		card_subtype_ids: ['megacorp'],
+		display_subtypes: 'Megacorp',
+		text: 'You get +1 maximum hand size.\nWhenever you score an agenda, you may add 1 card from Archives to HQ.',
+		printing_ids: ['30035'],
+		latest_printing_id: '30035',
+		latest_printing_images: createMockImages('30035', { xlarge: true })
 	}
 );
 
@@ -59,7 +69,17 @@ export const ZAHYA = createMockCard(
 		side_id: 'runner',
 		faction_id: 'criminal',
 		card_type_id: 'runner_identity',
-		card_pool_ids: ALL_CARD_POOL_IDS
+		card_pool_ids: ALL_CARD_POOL_IDS,
+		cost: null,
+		influence_cost: null,
+		minimum_deck_size: 40,
+		influence_limit: 15,
+		card_subtype_ids: ['cyborg'],
+		display_subtypes: 'Cyborg',
+		text: 'Once per turn → When a run on HQ or R&D ends, you may gain 1[credit] for each time you accessed a card during that run.',
+		printing_ids: ['30010'],
+		latest_printing_id: '30010',
+		latest_printing_images: createMockImages('30010', { xlarge: true })
 	}
 );
 
