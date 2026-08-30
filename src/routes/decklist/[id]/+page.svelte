@@ -15,17 +15,15 @@
         download_file,
         export_format,
     } from "$lib/utils";
-    import { tooltip } from "$lib/actions";
-    import CardImage from "$lib/components/card/CardImage.svelte";
     import Table from "$lib/components/Table.svelte";
     import Icon from "$lib/components/Icon.svelte";
     import { card_types } from "$lib/i18n";
     import DeckListSummary from "$lib/components/decklist/Summary.svelte";
     import DecklistBreakdown from "$lib/components/decklist/Breakdown.svelte";
+    import Grid from "$lib/components/decklist/Grid.svelte";
     import Printer from "$lib/components/Printer.svelte";
     import { localizeHref } from "$lib/paraglide/runtime";
     import Container from "$lib/components/Container.svelte";
-    import CardMeta from "$lib/components/card/Meta.svelte";
 
     interface Props {
         data: {
@@ -139,31 +137,12 @@
                 </div>
             </div>
 
-            <div class="temp">
+            <div class="temp temp--visual">
                 <p>Visual card layout</p>
-                {#each grouped_cards as group (group.type)}
-                    <div class="group">
-                        <div class="group-header">
-                            <Icon name={group.type} />
-                            <h4>
-                                {card_types[group.type]} ({count[group.type]})
-                            </h4>
-                        </div>
-                        <ul class="cards">
-                            {#each group.data as card (card.id)}
-                                <li use:tooltip={card}>
-                                    <CardMeta
-                                        {card}
-                                        quantity={data.decklist.attributes
-                                            .card_slots[card.id]}
-                                    >
-                                        <CardImage hasTransition {card} />
-                                    </CardMeta>
-                                </li>
-                            {/each}
-                        </ul>
-                    </div>
-                {/each}
+                <Grid
+                    groups={grouped_cards}
+                    cardSlots={data.decklist.attributes.card_slots}
+                />
             </div>
 
             <div class="temp">
@@ -230,16 +209,9 @@
         gap: 1rem;
     }
 
-    .cards {
-        grid-template-columns: repeat(5, 1fr);
-        /* TODO: review <ul>/<ol> globally, as they are often used for layout, having to reset/remove list-style, padding and margin often is repetitive */
-        list-style: none;
-        padding: unset;
-        margin: unset;
-    }
-
     .wrapper {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 1rem;
     }
 
@@ -248,5 +220,9 @@
         padding: 1rem;
         display: grid;
         gap: 2rem;
+    }
+
+    .temp--visual {
+        min-inline-size: 0;
     }
 </style>
