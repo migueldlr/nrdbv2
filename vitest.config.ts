@@ -1,6 +1,6 @@
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { preview } from '@vitest/browser-preview';
+import { playwright } from '@vitest/browser-playwright';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config';
 
@@ -30,7 +30,8 @@ export default mergeConfig(
 						name: 'client',
 						browser: {
 							enabled: true,
-							provider: preview(),
+							headless: true,
+							provider: playwright(),
 							instances: [
 								{
 									browser: 'chromium'
@@ -70,7 +71,7 @@ export default mergeConfig(
 						browser: {
 							enabled: true,
 							headless: true,
-							provider: preview(),
+							provider: playwright(),
 							instances: [{ browser: 'chromium' }]
 						},
 						setupFiles: ['./.storybook/vitest.setup.ts']
