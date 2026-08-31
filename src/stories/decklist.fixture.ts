@@ -1,4 +1,4 @@
-import { createMockCard } from '$lib/test-helpers';
+import { createMockCard, createMockImages } from '$lib/test-helpers';
 import type { Card, Decklist } from '$lib/types';
 
 export const decklist: Decklist = {
@@ -50,25 +50,33 @@ export const cards: Card[] = [
 			side_id: 'corp',
 			faction_id: 'haas_bioroid',
 			card_type_id: 'corp_identity',
-			latest_printing_id: '30035'
+			printing_ids: ['30035'],
+			latest_printing_id: '30035',
+			latest_printing_images: createMockImages('30035')
 		}
 	),
 	createMockCard('hedge_fund', 'Hedge Fund', ['system_gateway'], {
 		side_id: 'corp',
 		faction_id: 'neutral_corp',
 		card_type_id: 'operation',
-		latest_printing_id: '30075'
+		printing_ids: ['30075'],
+		latest_printing_id: '30075',
+		latest_printing_images: createMockImages('30075')
 	}),
 	createMockCard('predictive_planogram', 'Predictive Planogram', ['system_gateway'], {
 		side_id: 'corp',
 		faction_id: 'nbn',
 		card_type_id: 'operation',
-		latest_printing_id: '30056'
+		printing_ids: ['30056'],
+		latest_printing_id: '30056',
+		latest_printing_images: createMockImages('30056')
 	}),
 	createMockCard('seamless_launch', 'Seamless Launch', ['system_gateway'], {
 		side_id: 'corp',
 		faction_id: 'haas_bioroid',
 		card_type_id: 'operation',
-		latest_printing_id: '30040'
+		printing_ids: ['30040'],
+		latest_printing_id: '30040',
+		latest_printing_images: createMockImages('30040')
 	})
 ];
