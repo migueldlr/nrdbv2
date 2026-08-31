@@ -146,6 +146,16 @@
 	margin: 0;
 }
 
+.card-modal__text > .formatted-text + .card-modal__flavor {
+	margin-block-start: 0.625rem;
+}
+
+.card-modal__flavor {
+	color: var(--text-muted);
+	font-size: var(--font-size-sm);
+	font-style: italic;
+}
+
 .card-modal__footer {
 	display: flex;
 	align-items: center;
@@ -168,6 +178,20 @@
 .card-modal__stat {
 	gap: 0.25rem;
 	font-variant-numeric: tabular-nums;
+}
+
+.card-modal__credits {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: var(--font-size-sm);
+}
+
+.card-modal__credits a {
+	text-decoration: none;
+}
+
+.card-modal__credits a:hover {
+	text-decoration: underline;
 }
 
 .card-modal__close {

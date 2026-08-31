@@ -1,5 +1,6 @@
 <script module lang="ts">
 	import { defineMeta } from '@storybook/addon-svelte-csf';
+	import { mocked } from 'storybook/test';
 	import {
 		AMAZE_AMUSEMENTS,
 		CARNIVORE,
@@ -13,6 +14,8 @@
 	} from '$lib/cards.fixture';
 	import CardModal from '$lib/components/card/Modal.svelte';
 	import { PRECISION_DESIGN, ZAHYA } from '$lib/identities.fixture';
+	import { getPrintingById } from '$lib/printings';
+	import { SURE_GAMBLE_30030 } from '$lib/printings.fixture';
 	import type { Card, CardTypeIds } from '$lib/types';
 	import CardModalStory from './CardModalStory.svelte';
 
@@ -40,6 +43,9 @@
 		title: 'Components/Card/Modal',
 		component: CardModal,
 		render: template,
+		beforeEach: () => {
+			mocked(getPrintingById).mockResolvedValue(null);
+		},
 		parameters: {
 			layout: 'fullscreen'
 		},
@@ -71,3 +77,11 @@
 <Story name="Hardware" args={{ card: card_examples.hardware }} />
 <Story name="Program" args={{ card: card_examples.program }} />
 <Story name="Resource" args={{ card: card_examples.resource }} />
+
+<Story
+	name="Printing details"
+	args={{ card: card_examples.event }}
+	beforeEach={() => {
+		mocked(getPrintingById).mockResolvedValue(SURE_GAMBLE_30030);
+	}}
+/>

@@ -1,4 +1,6 @@
-import type { Card } from '$lib/types';
+import type { Card, Printing } from '$lib/types';
+
+type CardModalAttributes = Card['attributes'] | Printing['attributes'];
 
 type CardModalStat = {
 	value: string;
@@ -11,7 +13,7 @@ type CardModalStats = {
 	footer: CardModalStat[];
 };
 
-export const getCardModalStats = (attributes: Card['attributes']): CardModalStats => {
+export const getCardModalStats = (attributes: CardModalAttributes): CardModalStats => {
 	const type = attributes.card_type_id;
 	let title: CardModalStat | undefined;
 	const footer: CardModalStat[] = [];
