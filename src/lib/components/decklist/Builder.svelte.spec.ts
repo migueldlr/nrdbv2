@@ -2,7 +2,7 @@ import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CARNIVORE, CLEARINGHOUSE, SURE_GAMBLE } from '$lib/cards.fixture';
-import { ZAHYA } from '$lib/identities.fixture';
+import { ESA, ZAHYA } from '$lib/identities.fixture';
 import { DECK_SEARCH_LIMIT } from '$lib/constants';
 import { db_ready } from '$lib/store';
 import type { DeckCardSearchConstraints } from '$lib/search/deck-card-search';
@@ -23,15 +23,19 @@ vi.mock('$lib/search/deck-card-search', () => ({
 	searchDeckCards: searchDeckCardsMock
 }));
 
+const onChangeIdentityMock = vi.fn<(identityId: Card['id']) => void>();
+
 interface BuilderOptions {
 	readonly identity?: Card;
 	readonly fallbackCards?: readonly Card[];
+	readonly onChangeIdentity?: (identityId: Card['id']) => void;
 }
 
 const renderBuilder = (options: BuilderOptions = {}) =>
 	render(Builder, {
 		identity: options.identity ?? ZAHYA,
-		fallbackCards: options.fallbackCards ?? []
+		fallbackCards: options.fallbackCards ?? [],
+		onChangeIdentity: options.onChangeIdentity ?? onChangeIdentityMock
 	});
 
 const searchFor = async (query: string) => {
@@ -48,6 +52,7 @@ const runnerConstraints = (): DeckCardSearchConstraints => ({
 
 describe('Decklist Builder search', () => {
 	beforeEach(() => {
+		onChangeIdentityMock.mockReset();
 		searchDeckCardsMock.mockReset();
 		searchDeckCardsMock.mockResolvedValue({ cards: [], error: null });
 		db_ready.set(false);
@@ -138,17 +143,33 @@ describe('Decklist Builder search', () => {
 		expect(getCardLink(SURE_GAMBLE).query()).toBeNull();
 	});
 
-	it('excludes identity cards from displayed search results', async () => {
+	it('selects exactly one identity through the shared quantity controls', async () => {
 		db_ready.set(true);
 		searchDeckCardsMock.mockResolvedValue({
-			cards: [ZAHYA, SURE_GAMBLE],
+			cards: [ZAHYA, ESA],
 			error: null
 		});
 		await renderBuilder();
 
-		await expect.element(getCardLink(SURE_GAMBLE)).toBeVisible();
-		expect(getCardLink(ZAHYA).query()).toBeNull();
-		await expect.element(page.getByRole('status')).toHaveTextContent('1 card found');
+		const currentIdentity = page.getByRole('spinbutton', {
+			name: `Quantity for ${ZAHYA.attributes.title}`
+		});
+		const alternateIdentity = page.getByRole('spinbutton', {
+			name: `Quantity for ${ESA.attributes.title}`
+		});
+		const selectAlternate = page.getByRole('button', {
+			name: `Add one ${ESA.attributes.title}`
+		});
+
+		await expect.element(currentIdentity).toHaveAttribute('max', '1');
+		await expect.element(alternateIdentity).toHaveAttribute('max', '1');
+		await expect.element(currentIdentity).toHaveValue(1);
+		await expect.element(alternateIdentity).toHaveValue(0);
+
+		await userEvent.click(selectAlternate);
+		await expect.element(currentIdentity).toHaveValue(0);
+		await expect.element(alternateIdentity).toHaveValue(1);
+		expect(onChangeIdentityMock).toHaveBeenCalledWith(ESA.id);
 	});
 
 	it('reflects capped quantity controls in the grid and restores the empty state', async () => {

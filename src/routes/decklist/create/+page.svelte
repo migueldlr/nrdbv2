@@ -56,6 +56,7 @@
         <DecklistBuilder
             {identity}
             fallbackCards={data.side_cards ?? []}
+            onChangeIdentity={decklistNav.changeIdentity}
         />
     {:else}
         <IdentityPicker {catalog} {selected} />

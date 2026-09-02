@@ -16,9 +16,11 @@
     interface Props {
         readonly identity: Card;
         readonly fallbackCards?: readonly Card[];
+        readonly onChangeIdentity: (identityId: Card["id"]) => void;
     }
 
     interface DeckState {
+        readonly identity: Card["id"];
         readonly cards: Partial<
             Record<CardTypeIds, Record<Card["id"], number>>
         >;
@@ -46,7 +48,8 @@
 
     const MAX_QUANTITY = 3;
 
-    let { identity, fallbackCards = [] }: Props = $props();
+    let { identity, fallbackCards = [], onChangeIdentity }: Props = $props();
+    const get_initial_identity_id = (): Card["id"] => identity.id;
 
     let search_query = $state("");
     let search_status = $state.raw<DeckSearchStatus>({ kind: "idle" });
@@ -55,9 +58,11 @@
     let notes_tags = $state("");
     let notes_body = $state("");
     let deck = $state.raw<DeckState>({
+        identity: get_initial_identity_id(),
         cards: {},
     });
     let selected_cards = $state.raw<Card[]>([]);
+    let selected_identity_id = $state(get_initial_identity_id());
     let search_request_id = 0;
 
     let side = $derived(identity.attributes.side_id);
@@ -93,9 +98,8 @@
         card.attributes.card_type_id === "corp_identity";
 
     const show_results = (matches: Card[]) => {
-        const deck_card_matches = matches.filter((card) => !is_identity(card));
-        const truncated = deck_card_matches.length > DECK_SEARCH_LIMIT;
-        const visible = deck_card_matches.slice(0, DECK_SEARCH_LIMIT);
+        const truncated = matches.length > DECK_SEARCH_LIMIT;
+        const visible = matches.slice(0, DECK_SEARCH_LIMIT);
 
         filtered_cards = visible;
         search_status = { kind: "results", count: visible.length, truncated };
@@ -180,10 +184,16 @@
         };
     });
 
-    const get_max_quantity = (_card: Card): number => MAX_QUANTITY;
+    const get_max_quantity = (card: Card): number =>
+        is_identity(card) ? 1 : MAX_QUANTITY;
 
-    const get_quantity = (card: Card): number =>
-        deck.cards[card.attributes.card_type_id]?.[card.id] ?? 0;
+    const get_quantity = (card: Card): number => {
+        if (is_identity(card)) {
+            return card.id === selected_identity_id ? 1 : 0;
+        }
+
+        return deck.cards[card.attributes.card_type_id]?.[card.id] ?? 0;
+    };
 
     const set_quantity = (card: Card, quantity: number) => {
         const type_id = card.attributes.card_type_id;
@@ -195,6 +205,18 @@
                 Number.isFinite(quantity) ? Math.trunc(quantity) : 0,
             ),
         );
+
+        if (is_identity(card)) {
+            if (next_quantity === 1 && card.id !== selected_identity_id) {
+                selected_identity_id = card.id;
+                deck = {
+                    ...deck,
+                    identity: card.id,
+                };
+                onChangeIdentity(card.id);
+            }
+            return;
+        }
 
         if (next_quantity === 0) {
             delete cards_for_type[card.id];
@@ -214,6 +236,7 @@
         }
 
         deck = {
+            identity: deck.identity,
             cards: {
                 ...deck.cards,
                 [type_id]: cards_for_type,
