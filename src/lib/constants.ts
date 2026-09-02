@@ -16,6 +16,7 @@ export const CURRENT_SQLITE_URL_FILENAME = 'current_sqlite_url';
 export const NRDB_CACHE_COOKIE = 'nrdb_cache';
 export const SEARCH_LIMIT = 20;
 export const SEARCH_PREVIEW_LIMIT = 5;
+export const DECK_SEARCH_LIMIT = 100;
 
 export const NAVIGATION = [
 	{
