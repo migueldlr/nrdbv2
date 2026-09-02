@@ -1,4 +1,4 @@
-import { goto } from '$app/navigation';
+import { goto, replaceState } from '$app/navigation';
 import { page } from '$app/state';
 import { isDeckFormat, type DeckFormat } from './deck_formats';
 import { identitiesByFaction, type DecklistCatalog } from './identities';
@@ -80,19 +80,27 @@ export const writeParams = (params: URLSearchParams, patch: DecklistPatch): void
 	}
 };
 
-const navigate = (patch: DecklistPatch, replaceState: boolean): void => {
+const navigate = (patch: DecklistPatch, replaceHistory: boolean): void => {
 	const url = new URL(page.url);
 	writeParams(url.searchParams, patch);
 
-	void goto(url, { replaceState, keepFocus: true, noScroll: true });
+	void goto(url, { replaceState: replaceHistory, keepFocus: true, noScroll: true });
 };
 
 const replace = (patch: DecklistPatch) => navigate(patch, true);
+
+const shallowReplace = (patch: DecklistPatch): void => {
+	const url = new URL(page.url);
+	writeParams(url.searchParams, patch);
+
+	replaceState(url, page.state);
+};
 
 export const decklistNav = {
 	selectSide: (side: SidesIds) => replace({ side, identity: null, factions: [] }),
 	selectFormat: (format: DeckFormat) => replace({ format }),
 	setFactions: (factions: FactionIds[]) => replace({ factions }),
 	selectIdentity: (identity: Card['id']) => replace({ identity }),
+	changeIdentity: (identity: Card['id']) => shallowReplace({ identity }),
 	clearIdentity: () => replace({ identity: null })
 };

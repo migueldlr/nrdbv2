@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	createHref,
 	DEFAULT_FORMAT,
 	DEFAULT_SIDE,
+	decklistNav,
 	readParams,
 	writeParams,
 	type DecklistCatalog
@@ -10,6 +11,24 @@ import {
 import { APEX, ESA, PRECISION_DESIGN, RESTORING_HUMANITY, ZAHYA } from './identities.fixture';
 import { createMockCard } from './test-helpers';
 import type { Faction, FactionIds } from './types';
+
+const { appPage, gotoMock, replaceStateMock } = vi.hoisted(() => ({
+	appPage: {
+		url: new URL('https://example.com/decklist/create?side=runner'),
+		state: { source: 'decklist-params-test' }
+	},
+	gotoMock: vi.fn(),
+	replaceStateMock: vi.fn()
+}));
+
+vi.mock('$app/navigation', () => ({
+	goto: gotoMock,
+	replaceState: replaceStateMock
+}));
+
+vi.mock('$app/state', () => ({
+	page: appPage
+}));
 
 const faction = (id: string): Faction => ({ id }) as unknown as Faction;
 
@@ -41,6 +60,12 @@ const catalog: DecklistCatalog = {
 };
 
 const parse = (query: string) => readParams(new URLSearchParams(query), catalog);
+
+beforeEach(() => {
+	appPage.url = new URL('https://example.com/decklist/create?side=runner');
+	gotoMock.mockReset();
+	replaceStateMock.mockReset();
+});
 
 describe('readParams', () => {
 	it('falls back to defaults when params are absent', () => {
@@ -159,5 +184,33 @@ describe('createHref', () => {
 		const params = new URLSearchParams('side=runner&identity=esa_afontov_eco_insurrectionist');
 
 		expect(createHref({ identity: null }, params)).toBe('/decklist/create?side=runner');
+	});
+});
+
+describe('decklistNav', () => {
+	it('changes an identity shallowly without triggering navigation', () => {
+		decklistNav.changeIdentity(ESA.id);
+
+		expect(replaceStateMock).toHaveBeenCalledOnce();
+		expect(replaceStateMock).toHaveBeenCalledWith(
+			new URL(
+				'https://example.com/decklist/create?side=runner&identity=esa_afontov_eco_insurrectionist'
+			),
+			appPage.state
+		);
+		expect(gotoMock).not.toHaveBeenCalled();
+	});
+
+	it('navigates when an identity is selected from the picker', () => {
+		decklistNav.selectIdentity(ESA.id);
+
+		expect(gotoMock).toHaveBeenCalledOnce();
+		expect(gotoMock).toHaveBeenCalledWith(
+			new URL(
+				'https://example.com/decklist/create?side=runner&identity=esa_afontov_eco_insurrectionist'
+			),
+			{ replaceState: true, keepFocus: true, noScroll: true }
+		);
+		expect(replaceStateMock).not.toHaveBeenCalled();
 	});
 });
