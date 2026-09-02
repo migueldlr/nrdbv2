@@ -11,7 +11,7 @@ interface ActiveCardPoolRow {
 	card_pool_id: string;
 }
 
-export const load: PageLoad = async ({ data, url }) => {
+export const load: PageLoad = async ({ data }) => {
 	try {
 		const factions: FactionRow[] = await sql`SELECT * FROM factions`;
 		const identities: UnifiedCardRow[] =
@@ -30,18 +30,10 @@ export const load: PageLoad = async ({ data, url }) => {
 
 		if (identities.length === 0) return { ...data };
 
-		const identityId = url.searchParams.get('identity');
-		const identity = identityId ? identities.find((row) => row.id === identityId) : undefined;
-
-		const sideCards: UnifiedCardRow[] = identity
-			? await sql`SELECT * FROM unified_cards WHERE side_id = ${identity.side_id}`
-			: [];
-
 		return {
 			...data,
 			factions: factions.map(adaptFaction),
 			cards: identities.map(adaptCard),
-			side_cards: sideCards.map(adaptCard),
 			active_card_pool_ids
 		};
 	} catch (error) {

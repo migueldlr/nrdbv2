@@ -1,16 +1,12 @@
 <script lang="ts">
-    import type {
-        SidesIds,
-        FactionIds,
-        CardTypeIds,
-        Faction,
-        Card as TCard,
-        CardGroup,
-    } from "$lib/types";
-    import { card_types, factions as i18n_factions } from "$lib/i18n";
-    import { CARD_TYPES } from "$lib/constants";
+    import type { Card, CardGroup, CardTypeIds } from "$lib/types";
+    import { DECK_SEARCH_LIMIT } from "$lib/constants";
     import { group_cards_by_type } from "$lib/utils";
-    import Icon from "$lib/components/Icon.svelte";
+    import {
+        searchDeckCards,
+        type DeckCardSearchConstraints,
+    } from "$lib/search/deck-card-search";
+    import { db_ready } from "$lib/store";
     import CardImage from "../card/CardImage.svelte";
     import Button from "../ui/Button.svelte";
     import BuilderSearchResults from "./BuilderSearchResults.svelte";
@@ -18,159 +14,206 @@
     import type { CardSlots } from "./grid";
 
     interface Props {
-        side: SidesIds;
-        faction: FactionIds;
-        identity: TCard["id"];
-        factions: Faction[];
-        cards: TCard[];
+        readonly identity: Card;
+        readonly fallbackCards?: readonly Card[];
     }
 
-    let { side, faction, identity, factions, cards }: Props = $props();
+    interface DeckState {
+        readonly cards: Partial<
+            Record<CardTypeIds, Record<Card["id"], number>>
+        >;
+    }
+
+    type DeckSearchStatus =
+        | { readonly kind: "idle" }
+        | { readonly kind: "searching" }
+        | { readonly kind: "error"; readonly message: string }
+        | {
+              readonly kind: "results";
+              readonly count: number;
+              readonly truncated: boolean;
+          };
+
+    const TABS = [
+        "Build",
+        "Notes",
+        "Check",
+        "History",
+        "Collection",
+        "Settings",
+    ] as const satisfies readonly string[];
+    type BuilderTab = (typeof TABS)[number];
+
+    const MAX_QUANTITY = 3;
+
+    let { identity, fallbackCards = [] }: Props = $props();
 
     let search_query = $state("");
-    let active_tab = $state<
-        "Build" | "Notes" | "Check" | "History" | "Collection" | "Settings"
-    >("Build");
+    let search_status = $state.raw<DeckSearchStatus>({ kind: "idle" });
+    let filtered_cards = $state.raw<Card[] | null>(null);
+    let active_tab = $state<BuilderTab>("Build");
     let notes_tags = $state("");
     let notes_body = $state("");
-
-    let deck = $derived<{
-        readonly identity: TCard["id"];
-        readonly cards: Partial<
-            Record<CardTypeIds, Record<TCard["id"], number>>
-        >;
-    }>({
-        identity,
+    let deck = $state.raw<DeckState>({
         cards: {},
     });
+    let selected_cards = $state.raw<Card[]>([]);
+    let search_request_id = 0;
 
-    let factions_list = $derived<Faction[]>(
-        factions.filter((f: Faction) => f.attributes.side_id === side),
+    let side = $derived(identity.attributes.side_id);
+    let fallback_side_cards = $derived(
+        fallbackCards.filter((card) => card.attributes.side_id === side),
     );
-
-    let identity_card = $derived<TCard | undefined>(
-        cards.find((card: TCard) => card.id === identity),
-    );
-
-    let filters = $derived<{
-        factions: FactionIds[];
-        types: CardTypeIds[];
-    }>({
-        factions: [identity_card?.attributes.faction_id ?? faction],
-        types: [],
-    });
-
-    let filtered_cards = $derived<TCard[]>(
-        cards.filter(
-            (card: TCard) =>
-                card.attributes.side_id === side &&
-                card.attributes.card_type_id !== `${side}_identity`,
-        ),
-    );
-
-    let filtered_types = $derived<CardTypeIds[]>(
-        side === "corp"
-            ? CARD_TYPES.filter(
-                  (type) =>
-                      ![
-                          "event",
-                          "hardware",
-                          "resource",
-                          "program",
-                          "runner_identity",
-                          "corp_identity",
-                      ].includes(type),
-              )
-            : CARD_TYPES.filter(
-                  (type) =>
-                      ![
-                          "agenda",
-                          "asset",
-                          "operation",
-                          "upgrade",
-                          "runner_identity",
-                          "corp_identity",
-                          "ice",
-                      ].includes(type),
-              ),
-    );
-
+    let has_fallback_cards = $derived(fallback_side_cards.length > 0);
+    let can_search = $derived($db_ready || has_fallback_cards);
+    let visible_cards = $derived(filtered_cards ?? []);
     let grouped_cards = $derived<CardGroup[]>(
-        group_cards_by_type(filtered_cards),
+        group_cards_by_type(selected_cards),
     );
-
     let card_slots = $derived.by<CardSlots>(() => {
-        const slots: Record<TCard["id"], number> = {};
+        const slots: Record<Card["id"], number> = {};
 
-        for (const type of filtered_types) {
-            Object.assign(slots, deck.cards[type] ?? {});
+        for (const cards_for_type of Object.values(deck.cards)) {
+            Object.assign(slots, cards_for_type ?? {});
         }
 
         return slots;
     });
-
     let has_selected_cards = $derived(
-        grouped_cards.some((group) =>
-            group.data.some((card) => (card_slots[card.id] ?? 0) > 0),
-        ),
+        Object.values(card_slots).some((quantity) => quantity > 0),
     );
 
-    let results = $derived.by<TCard[]>(() => {
-        const query = search_query.trim();
-
-        return filtered_cards.filter((card: TCard) => {
-            const title_match =
-                query.length === 0 ||
-                card.attributes.title
-                    .toLowerCase()
-                    .includes(query.toLowerCase()) ||
-                card.id.toLowerCase().includes(query.toLowerCase());
-
-            const faction_match =
-                filters.factions.length === 0 ||
-                filters.factions.includes(card.attributes.faction_id);
-
-            const type_match =
-                filters.types.length === 0 ||
-                filters.types.includes(card.attributes.card_type_id);
-
-            return title_match && faction_match && type_match;
-        });
+    const get_constraints = (): DeckCardSearchConstraints => ({
+        sideId: side,
+        limit: DECK_SEARCH_LIMIT + 1,
     });
 
-    const toggle_faction = (faction_id: FactionIds) => {
-        filters = {
-            ...filters,
-            factions: filters.factions.includes(faction_id)
-                ? filters.factions.filter((value) => value !== faction_id)
-                : [...filters.factions, faction_id],
-        };
+    const is_identity = (card: Card): boolean =>
+        card.attributes.card_type_id === "runner_identity" ||
+        card.attributes.card_type_id === "corp_identity";
+
+    const show_results = (matches: Card[]) => {
+        const deck_card_matches = matches.filter((card) => !is_identity(card));
+        const truncated = deck_card_matches.length > DECK_SEARCH_LIMIT;
+        const visible = deck_card_matches.slice(0, DECK_SEARCH_LIMIT);
+
+        filtered_cards = visible;
+        search_status = { kind: "results", count: visible.length, truncated };
     };
 
-    const toggle_type = (card_type_id: CardTypeIds) => {
-        filters = {
-            ...filters,
-            types: filters.types.includes(card_type_id)
-                ? filters.types.filter((value) => value !== card_type_id)
-                : [...filters.types, card_type_id],
-        };
+    const run_fallback_search = (query: string) => {
+        const normalized_query = query.toLowerCase();
+
+        show_results(
+            fallback_side_cards.filter(
+                (card) =>
+                    normalized_query.length === 0 ||
+                    card.attributes.title
+                        .toLowerCase()
+                        .includes(normalized_query) ||
+                    card.id.toLowerCase().includes(normalized_query),
+            ),
+        );
     };
 
-    const get_quantity = (card: TCard): number =>
+    const run_search = async (
+        query: string,
+        request_id: number,
+        deck_constraints: DeckCardSearchConstraints,
+    ) => {
+        try {
+            const { cards: results, error } = await searchDeckCards(
+                query,
+                deck_constraints,
+            );
+
+            if (request_id !== search_request_id) return;
+
+            if (error) {
+                search_status = {
+                    kind: "error",
+                    message:
+                        error.message ||
+                        "The card search could not be completed.",
+                };
+                return;
+            }
+
+            show_results(results);
+        } catch (error) {
+            if (request_id !== search_request_id) return;
+
+            console.error("Failed to search for deck cards:", error);
+            search_status = {
+                kind: "error",
+                message:
+                    "Something went wrong while searching. Please try again.",
+            };
+        }
+    };
+
+    const request_search = (query: string) => {
+        const trimmed = query.trim();
+
+        if (!$db_ready) {
+            search_request_id += 1;
+
+            if (has_fallback_cards) {
+                run_fallback_search(trimmed);
+            } else {
+                filtered_cards = null;
+                search_status = { kind: "idle" };
+            }
+            return;
+        }
+
+        const request_id = ++search_request_id;
+        search_status = { kind: "searching" };
+        void run_search(trimmed, request_id, get_constraints());
+    };
+
+    $effect(() => {
+        request_search(search_query);
+
+        return () => {
+            search_request_id += 1;
+        };
+    });
+
+    const get_max_quantity = (_card: Card): number => MAX_QUANTITY;
+
+    const get_quantity = (card: Card): number =>
         deck.cards[card.attributes.card_type_id]?.[card.id] ?? 0;
 
-    const set_quantity = (card: TCard, quantity: number) => {
+    const set_quantity = (card: Card, quantity: number) => {
         const type_id = card.attributes.card_type_id;
         const cards_for_type = { ...deck.cards[type_id] };
+        const next_quantity = Math.max(
+            0,
+            Math.min(
+                get_max_quantity(card),
+                Number.isFinite(quantity) ? Math.trunc(quantity) : 0,
+            ),
+        );
 
-        if (quantity <= 0) {
+        if (next_quantity === 0) {
             delete cards_for_type[card.id];
+            selected_cards = selected_cards.filter(
+                (selected_card) => selected_card.id !== card.id,
+            );
         } else {
-            cards_for_type[card.id] = Math.min(3, quantity);
+            cards_for_type[card.id] = next_quantity;
+
+            if (
+                !selected_cards.some(
+                    (selected_card) => selected_card.id === card.id,
+                )
+            ) {
+                selected_cards = [...selected_cards, card];
+            }
         }
 
         deck = {
-            identity,
             cards: {
                 ...deck.cards,
                 [type_id]: cards_for_type,
@@ -183,16 +226,12 @@
     <div class="builder__summary">
         <div class="builder__summary__sticky">
             <h2>Decklist builder</h2>
-            {#if identity_card}
-                <p>
-                    Decklist for <strong
-                        >{identity_card.attributes.title}</strong
-                    >
-                </p>
-                <div style="width: 50%;">
-                    <CardImage card={identity_card} />
-                </div>
-            {/if}
+            <p>
+                Decklist for <strong>{identity.attributes.title}</strong>
+            </p>
+            <div style="width: 50%;">
+                <CardImage card={identity} />
+            </div>
 
             {#if has_selected_cards}
                 <Grid groups={grouped_cards} cardSlots={card_slots} />
@@ -204,19 +243,12 @@
 
     <div class="builder__search">
         <div class="builder__tabs" role="tablist" aria-label="Decklist tabs">
-            {#each ["Build", "Notes", "Check", "History", "Collection", "Settings"] as tab (tab)}
+            {#each TABS as tab (tab)}
                 <Button
                     role="tab"
                     color={active_tab === tab ? "primary" : "ghost"}
                     aria-selected={active_tab === tab}
-                    onclick={() =>
-                        (active_tab = tab as
-                            | "Build"
-                            | "Notes"
-                            | "Check"
-                            | "History"
-                            | "Collection"
-                            | "Settings")}
+                    onclick={() => (active_tab = tab)}
                 >
                     {tab}
                 </Button>
@@ -229,55 +261,46 @@
                 id="deck-search"
                 class="builder__input"
                 type="search"
-                placeholder="Find a card or filter the list"
+                placeholder="Describe the cards you want"
+                disabled={!can_search}
                 bind:value={search_query}
             />
 
-            <div class="builder__filters">
-                <section>
-                    <h3>Filter by faction</h3>
-                    <div class="builder__chips">
-                        {#each factions_list as faction_option (faction_option.id)}
-                            <Button
-                                color={filters.factions.includes(
-                                    faction_option.id,
-                                )
-                                    ? "primary"
-                                    : "ghost"}
-                                onclick={() => toggle_faction(faction_option.id)}
-                            >
-                                <Icon name={faction_option.id} size="sm" />
-                                {i18n_factions[faction_option.id]}
-                            </Button>
-                        {/each}
-                    </div>
-                </section>
+            {#if !can_search}
+                <p class="builder__empty" role="status" aria-live="polite">
+                    Preparing the card database…
+                </p>
+            {:else if search_status.kind === "searching"}
+                <p class="builder__empty" role="status" aria-live="polite">
+                    Searching cards…
+                </p>
+            {:else if search_status.kind === "error"}
+                <p class="builder__error" role="alert">
+                    {search_status.message}
+                </p>
+            {:else if search_status.kind === "results" && search_status.count === 0}
+                <p class="builder__empty" role="status" aria-live="polite">
+                    No cards found for this search.
+                </p>
+            {:else if search_status.kind === "results" && search_status.truncated}
+                <p role="status" aria-live="polite">
+                    Showing the first {search_status.count} matches. Refine your
+                    search to narrow the list.
+                </p>
+            {:else if search_status.kind === "results"}
+                <p role="status" aria-live="polite">
+                    {search_status.count}
+                    {search_status.count === 1 ? "card" : "cards"} found.
+                </p>
+            {/if}
 
-                <section>
-                    <h3>Filter by type</h3>
-                    <div class="builder__chips">
-                        {#each filtered_types as type (type)}
-                            <Button
-                                color={filters.types.includes(type)
-                                    ? "primary"
-                                    : "ghost"}
-                                onclick={() => toggle_type(type)}
-                            >
-                                <Icon name={type} size="sm" />
-                                {card_types[type]}
-                            </Button>
-                        {/each}
-                    </div>
-                </section>
-            </div>
-
-            <BuilderSearchResults
-                cards={results}
-                getQuantity={get_quantity}
-                setQuantity={set_quantity}
-            />
-            {#if results.length === 0}
-                <p class="builder__empty">No cards found</p>
+            {#if can_search && visible_cards.length > 0}
+                <BuilderSearchResults
+                    cards={visible_cards}
+                    getQuantity={get_quantity}
+                    getMaxQuantity={get_max_quantity}
+                    setQuantity={set_quantity}
+                />
             {/if}
         {:else if active_tab === "Notes"}
             <div class="builder__notes">
@@ -329,6 +352,10 @@
         color: var(--text-muted);
     }
 
+    .builder__error {
+        color: var(--jinteki);
+    }
+
     .builder__label {
         font-weight: var(--font-weight-semibold);
     }
@@ -337,51 +364,11 @@
         width: 100%;
     }
 
-    .builder__filters {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .builder__tabs {
         display: flex;
         gap: 0.5rem;
         flex-wrap: wrap;
     }
-
-    /* .builder__tabs button {
-        border: 1px solid var(--border);
-        opacity: 0.5;
-        background: transparent;
-        padding: 0.375rem 0.75rem;
-    }
-
-    .builder__tabs button.active {
-        opacity: 1;
-        border-color: var(--text);
-    } */
-
-    .builder__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-
-    /* .builder__chips button {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.5rem;
-        border: 1px solid var(--border);
-        background: transparent;
-        opacity: 0.5;
-    }
-
-    .builder__chips button.active {
-        background: var(--text);
-        color: var(--foreground);
-        opacity: 1;
-    } */
 
     .builder__notes {
         display: grid;
@@ -404,10 +391,6 @@
 
     @media (width <= 1024px) {
         .builder {
-            grid-template-columns: 1fr;
-        }
-
-        .builder__filters {
             grid-template-columns: 1fr;
         }
     }

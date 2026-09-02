@@ -8,7 +8,7 @@
     import DecklistBuilder from "$lib/components/decklist/Builder.svelte";
     import Icon from "$lib/components/Icon.svelte";
     import Button from "$lib/components/ui/Button.svelte";
-    import type { Card, FactionIds } from "$lib/types";
+    import type { Card } from "$lib/types";
 
     interface Props {
         data: PageData;
@@ -29,23 +29,12 @@
             ? catalog.cards.find((card) => card.id === selected.identity)
             : undefined,
     );
-
-    let faction = $derived<FactionIds | null>(
-        identity &&
-            catalog.factions.some(
-                (f) => f.id === identity.attributes.faction_id,
-            )
-            ? identity.attributes.faction_id
-            : null,
-    );
 </script>
 
 {#if identity}
     <Header title={identity.attributes.title} subtitle="">
         {#snippet icon()}
-            {#if faction}
-                <Icon name={faction} size="xl" />
-            {/if}
+            <Icon name={identity.attributes.faction_id} size="xl" />
         {/snippet}
 
         {#snippet actions()}
@@ -63,13 +52,10 @@
 {/if}
 
 <Container>
-    {#if identity && faction}
+    {#if identity}
         <DecklistBuilder
-            side={selected.side}
-            {faction}
-            identity={identity.id}
-            factions={data.factions ?? []}
-            cards={data.side_cards ?? []}
+            {identity}
+            fallbackCards={data.side_cards ?? []}
         />
     {:else}
         <IdentityPicker {catalog} {selected} />

@@ -10,12 +10,11 @@
     interface Props {
         readonly cards: readonly Card[];
         readonly getQuantity: (card: Card) => number;
+        readonly getMaxQuantity: (card: Card) => number;
         readonly setQuantity: (card: Card, quantity: number) => void;
     }
 
-    const MAX_QUANTITY = 3;
-
-    let { cards, getQuantity, setQuantity }: Props = $props();
+    let { cards, getQuantity, getMaxQuantity, setQuantity }: Props = $props();
 
     const increment = (card: Card) => {
         setQuantity(card, getQuantity(card) + 1);
@@ -29,7 +28,7 @@
 <table>
     <thead>
         <tr>
-            <th>Qty</th>
+            <th>Quantity</th>
             <th>Name</th>
             <th>Type</th>
             <th>Influence</th>
@@ -44,26 +43,24 @@
                     <span class="builder__quantity">
                         <Button
                             size="sm"
+                            aria-label={`Remove one ${result.attributes.title}`}
                             onclick={() => decrement(result)}>-</Button
                         >
                         <input
                             type="number"
                             min="0"
-                            max={MAX_QUANTITY}
+                            max={getMaxQuantity(result)}
+                            aria-label={`Quantity for ${result.attributes.title}`}
                             value={getQuantity(result)}
                             oninput={(event) =>
                                 setQuantity(
                                     result,
-                                    Number.parseInt(
-                                        (
-                                            event.currentTarget as HTMLInputElement
-                                        ).value,
-                                        10,
-                                    ) || 0,
+                                    event.currentTarget.valueAsNumber || 0,
                                 )}
                         />
                         <Button
                             size="sm"
+                            aria-label={`Add one ${result.attributes.title}`}
                             onclick={() => increment(result)}>+</Button
                         >
                     </span>
