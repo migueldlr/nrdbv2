@@ -12,6 +12,8 @@
         RUNNER_CARD_TYPES,
     } from "$lib/constants";
     import { group_cards_by_type } from "$lib/utils";
+    import { searchCards } from "$lib/search";
+    import { interpretSearch } from "$lib/search/interpret";
     import Icon from "$lib/components/Icon.svelte";
     import CardImage from "../card/CardImage.svelte";
     import Button from "../ui/Button.svelte";
@@ -43,9 +45,19 @@
         identity_card?.attributes.side_id ?? "corp",
     );
 
-    let faction_filters = $state<FactionIds[]>([]);
+    let interpreted_query = $derived(interpretSearch(search_query));
 
-    let type_filters = $state<CardTypeIds[]>([]);
+    let faction_filters = $derived<FactionIds[]>(
+        [...interpreted_query.matchAll(/\bf:([a-z_]+)/g)].map(
+            (match) => match[1] as FactionIds,
+        ),
+    );
+
+    let type_filters = $derived<CardTypeIds[]>(
+        [...interpreted_query.matchAll(/\bt:([a-z_]+)/g)].map(
+            (match) => match[1] as CardTypeIds,
+        ),
+    );
 
     let faction_options = $derived<FactionIds[]>(
         [
@@ -73,40 +85,55 @@
         ),
     );
 
-    let search_results = $derived.by<TCard[]>(() => {
+    let search_results = $state<TCard[]>([]);
+
+    let search_request = 0;
+
+    $effect(() => {
         const query = search_query.trim();
 
-        return side_cards.filter((card: TCard) => {
-            const title_match =
-                query.length === 0 ||
-                card.attributes.title
-                    .toLowerCase()
-                    .includes(query.toLowerCase()) ||
-                card.id.toLowerCase().includes(query.toLowerCase());
+        if (query.length === 0) {
+            search_results = side_cards;
+            return;
+        }
 
-            const faction_match =
-                faction_filters.length === 0 ||
-                faction_filters.includes(card.attributes.faction_id);
+        const request = ++search_request;
 
-            const type_match =
-                type_filters.length === 0 ||
-                type_filters.includes(card.attributes.card_type_id);
-
-            return title_match && faction_match && type_match;
+        searchCards(query, {
+            mode: "interpreted",
+            constraint: {
+                clause: "unified_cards.side_id = ?",
+                params: [side],
+            },
+        }).then(({ cards, error }) => {
+            if (error === null && request === search_request) {
+                search_results = cards;
+            }
         });
     });
 
-    const toggle = <T>(values: T[], value: T): T[] =>
-        values.includes(value)
-            ? values.filter((existing) => existing !== value)
-            : [...values, value];
+    const toggle_query_phrase = (phrase: string): void => {
+        const removal = new RegExp(
+            `\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+            "i",
+        );
+
+        search_query = removal.test(search_query)
+            ? search_query
+                  .replace(removal, "")
+                  .replace(/\s+/g, " ")
+                  .trim()
+            : [...search_query.split(" ").filter(Boolean), phrase].join(
+                  " ",
+              );
+    };
 
     const on_toggle_faction_change = (faction_id: FactionIds) => {
-        faction_filters = toggle(faction_filters, faction_id);
+        toggle_query_phrase(faction_id.replaceAll("_", " "));
     };
 
     const on_toggle_type_change = (card_type_id: CardTypeIds) => {
-        type_filters = toggle(type_filters, card_type_id);
+        toggle_query_phrase(card_type_id.replaceAll("_", " "));
     };
 </script>
 
