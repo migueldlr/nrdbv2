@@ -2,10 +2,28 @@ import { describe, test, expect } from 'vitest';
 import {
 	queryGrammar,
 	CardSearchQueryBuilder,
-	PrintingSearchQueryBuilder
+	PrintingSearchQueryBuilder,
+	parseQueryExpression,
+	serializeQueryExpression
 } from './search_grammar_and_builder';
 
 describe('Search Grammar and Builder', () => {
+	test.each([
+		'f:anarch or (t:ice x:"end the run")',
+		'f:(anarch|shaper) t!event',
+		'!(f:nbn or t:asset) cost<=3'
+	])('canonical serialization preserves query compilation for %s', (input) => {
+		const parsed = parseQueryExpression(input);
+		expect(parsed.kind).toBe('valid');
+		if (parsed.kind !== 'valid') return;
+
+		const original = new CardSearchQueryBuilder(input);
+		const serialized = new CardSearchQueryBuilder(serializeQueryExpression(parsed.query));
+		expect(serialized.parse_error).toBeNull();
+		expect(serialized.where).toBe(original.where);
+		expect(serialized.where_values).toEqual(original.where_values);
+	});
+
 	test('parses a keyword', () => {
 		const inputs = ['t'];
 		for (const input of inputs) {

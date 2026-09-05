@@ -7,6 +7,15 @@ import {
 	assembleOutput
 } from './intents';
 import { RE_QUOTED_TERM } from './patterns';
+import { CARD_TYPES, FACTIONS } from '$lib/constants';
+import type { CardTypeIds, FactionIds } from '$lib/types';
+import {
+	parseQueryExpression,
+	queryFilterKind,
+	serializeQueryExpression,
+	type QueryExpression,
+	type QueryValue
+} from '$lib/search_grammar_and_builder';
 
 export { NEUTRAL_FACTION_OR_QUERY } from './intents';
 
@@ -39,7 +48,16 @@ function extractQuotedTerms(input: string): { remainder: string; terms: Semantic
 	return { remainder, terms };
 }
 
-function runStages(input: string): { numericRaw: Intent[]; tokenRaw: Intent[] } {
+export type QueryFilter =
+	| { kind: 'faction'; id: FactionIds }
+	| { kind: 'cardType'; id: CardTypeIds };
+
+export interface QueryInterpretation {
+	expression: string;
+	filters: QueryFilter[];
+}
+
+function runStages(input: string): Intent[] {
 	const { remainder, terms } = extractQuotedTerms(input);
 	const normalized = normalizeInput(remainder);
 	const { intents: numericRaw, remainder: afterNumeric } = extractNumericIntents(normalized);
@@ -52,10 +70,159 @@ function runStages(input: string): { numericRaw: Intent[]; tokenRaw: Intent[] } 
 		}
 		return intent;
 	});
-	return { numericRaw, tokenRaw };
+	return [...numericRaw, ...tokenRaw];
+}
+
+function factionId(value: string): FactionIds | undefined {
+	const normalized = value.toLowerCase();
+	return FACTIONS.find((id) => id === normalized);
+}
+
+function cardTypeId(value: string): CardTypeIds | undefined {
+	const normalized = value.toLowerCase();
+	return CARD_TYPES.find((id) => id === normalized);
+}
+
+function filterFor(kind: 'faction' | 'cardType', value: string): QueryFilter | undefined {
+	if (kind === 'faction') {
+		const id = factionId(value);
+		return id ? { kind, id } : undefined;
+	}
+	const id = cardTypeId(value);
+	return id ? { kind, id } : undefined;
+}
+
+function filtersFromValue(value: QueryValue, kind: 'faction' | 'cardType'): QueryFilter[] {
+	if (value.type === 'value_comb') {
+		return [...filtersFromValue(value.left, kind), ...filtersFromValue(value.right, kind)];
+	}
+	if (value.is_regex) return [];
+	const filter = filterFor(kind, value.value);
+	return filter ? [filter] : [];
+}
+
+function collectPositiveFilters(query: QueryExpression, positive = true): QueryFilter[] {
+	switch (query.type) {
+		case 'conjunction':
+			return [
+				...collectPositiveFilters(query.left, positive),
+				...collectPositiveFilters(query.right, positive)
+			];
+		case 'bracketed':
+			return collectPositiveFilters(query.child, positive);
+		case 'negate':
+			return collectPositiveFilters(query.child, !positive);
+		case 'pair': {
+			const conditionIsPositive =
+				(query.operator === ':' && positive) || (query.operator === '!' && !positive);
+			const kind = queryFilterKind(query.keyword);
+			return conditionIsPositive && kind ? filtersFromValue(query.values, kind) : [];
+		}
+	}
+}
+
+function sameFilter(left: QueryFilter, right: QueryFilter): boolean {
+	return left.kind === right.kind && left.id === right.id;
+}
+
+function fromQuery(query: QueryExpression): QueryInterpretation {
+	const filters = collectPositiveFilters(query);
+	return {
+		expression: serializeQueryExpression(query),
+		filters: filters.filter(
+			(filter, index) =>
+				filters.findIndex((candidate) => sameFilter(candidate, filter)) === index
+		)
+	};
+}
+
+export function interpretQuery(input: string): QueryInterpretation {
+	const expression = assembleOutput(runStages(input));
+	const parsed = parseQueryExpression(expression);
+	return parsed.kind === 'valid'
+		? { ...fromQuery(parsed.query), expression }
+		: { expression, filters: [] };
 }
 
 export function interpretSearch(input: string): string {
-	const { numericRaw, tokenRaw } = runStages(input);
-	return assembleOutput([...numericRaw, ...tokenRaw]);
+	return interpretQuery(input).expression;
+}
+
+function filterCondition(filter: QueryFilter): QueryExpression {
+	return {
+		type: 'pair',
+		keyword: filter.kind === 'faction' ? 'f' : 't',
+		operator: ':',
+		values: { type: 'literal', value: filter.id, is_regex: false }
+	};
+}
+
+function literalMatchesFilter(value: QueryValue, filter: QueryFilter): boolean {
+	return value.type === 'literal' && !value.is_regex && value.value.toLowerCase() === filter.id;
+}
+
+function removeFilterValue(value: QueryValue, filter: QueryFilter): QueryValue | null {
+	if (value.type === 'literal') return literalMatchesFilter(value, filter) ? null : value;
+
+	const left = removeFilterValue(value.left, filter);
+	const right = removeFilterValue(value.right, filter);
+	if (!left) return right;
+	if (!right) return left;
+	return { ...value, left, right };
+}
+
+function removeQueryFilter(
+	expression: QueryExpression,
+	filter: QueryFilter,
+	positive = true
+): QueryExpression | null {
+	switch (expression.type) {
+		case 'conjunction': {
+			const left = removeQueryFilter(expression.left, filter, positive);
+			const right = removeQueryFilter(expression.right, filter, positive);
+			if (!left) return right;
+			if (!right) return left;
+			return { ...expression, left, right };
+		}
+		case 'bracketed': {
+			const child = removeQueryFilter(expression.child, filter, positive);
+			if (!child) return null;
+			return child.type === 'conjunction' ? { ...expression, child } : child;
+		}
+		case 'negate': {
+			const child = removeQueryFilter(expression.child, filter, !positive);
+			return child ? { ...expression, child } : null;
+		}
+		case 'pair': {
+			const conditionIsPositive =
+				(expression.operator === ':' && positive) ||
+				(expression.operator === '!' && !positive);
+			if (!conditionIsPositive || queryFilterKind(expression.keyword) !== filter.kind) {
+				return expression;
+			}
+			const values = removeFilterValue(expression.values, filter);
+			return values ? { ...expression, values } : null;
+		}
+	}
+}
+
+export function toggleQueryFilter(
+	interpretation: QueryInterpretation,
+	filter: QueryFilter
+): QueryInterpretation {
+	if (!interpretation.expression) return fromQuery(filterCondition(filter));
+	const parsed = parseQueryExpression(interpretation.expression);
+	if (parsed.kind === 'invalid') return interpretation;
+
+	if (interpretation.filters.some((active) => sameFilter(active, filter))) {
+		const query = removeQueryFilter(parsed.query, filter);
+		return query ? fromQuery(query) : { expression: '', filters: [] };
+	}
+
+	return fromQuery({
+		type: 'conjunction',
+		op: 'and',
+		left: filterCondition(filter),
+		right: parsed.query
+	});
 }

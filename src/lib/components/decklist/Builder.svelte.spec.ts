@@ -118,4 +118,31 @@ describe('Decklist Builder', () => {
 		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
 		expect(page.getByRole('link', { name: 'Sure Gamble' }).query()).toBeNull();
 	});
+
+	it('synchronizes filters with interpreted input and semantic toggles', async () => {
+		await render(Builder, {
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, SURE_GAMBLE]
+		});
+
+		const search = page.getByRole('searchbox');
+		const criminal = page.getByRole('button', { name: 'Criminal' });
+		const event = page.getByRole('button', { name: 'Event' });
+
+		await userEvent.type(search, 'criminal events');
+		await expect
+			.poll(() => criminal.element().classList.contains('button--primary'))
+			.toBe(true);
+		await expect.poll(() => event.element().classList.contains('button--primary')).toBe(true);
+
+		await userEvent.click(criminal);
+		await expect.element(search).toHaveValue('t:event');
+		await expect
+			.poll(() => criminal.element().classList.contains('button--primary'))
+			.toBe(false);
+		await expect.poll(() => event.element().classList.contains('button--primary')).toBe(true);
+		await vi.waitFor(() =>
+			expect(sqlMock).toHaveBeenLastCalledWith(expect.any(String), '%event%', 'runner')
+		);
+	});
 });

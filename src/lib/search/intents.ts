@@ -31,6 +31,7 @@ import {
 	RE_BARE_NUMBER_OR_FIELD,
 	RE_BARE_NUMBER_FIELD
 } from './patterns';
+import type { CardTypeIds, FactionIds } from '$lib/types';
 
 export interface SideIntent {
 	kind: 'side';
@@ -39,12 +40,12 @@ export interface SideIntent {
 }
 export interface FactionIntent {
 	kind: 'faction';
-	value: string | string[];
+	value: FactionIds | FactionIds[];
 	negated: boolean;
 }
 export interface TypeIntent {
 	kind: 'type';
-	value: string | string[];
+	value: CardTypeIds | CardTypeIds[];
 	negated: boolean;
 }
 export interface SubtypeIntent {
@@ -325,15 +326,11 @@ type AssemblyItem = StructuredIntent | OrGroupIntent;
 
 // Negated array factions/types are AND-negation, not OR alternatives, so they aren't expanded.
 function expandForOrGroup(intent: StructuredIntent): StructuredIntent[] {
-	if (
-		(intent.kind === 'faction' || intent.kind === 'type') &&
-		Array.isArray(intent.value) &&
-		!intent.negated
-	) {
-		const { kind } = intent;
-		return (intent.value as string[]).map(
-			(v) => ({ kind, value: v, negated: false }) as StructuredIntent
-		);
+	if (intent.kind === 'faction' && Array.isArray(intent.value) && !intent.negated) {
+		return intent.value.map((value) => ({ kind: 'faction', value, negated: false }));
+	}
+	if (intent.kind === 'type' && Array.isArray(intent.value) && !intent.negated) {
+		return intent.value.map((value) => ({ kind: 'type', value, negated: false }));
 	}
 	return [intent];
 }

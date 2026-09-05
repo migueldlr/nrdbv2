@@ -13,6 +13,7 @@
     } from "$lib/constants";
     import { group_cards_by_type } from "$lib/utils";
     import { searchCards } from "$lib/search";
+    import { interpretQuery, toggleQueryFilter } from "$lib/search/interpret";
     import Icon from "$lib/components/Icon.svelte";
     import CardImage from "../card/CardImage.svelte";
     import Button from "../ui/Button.svelte";
@@ -44,9 +45,17 @@
         identity_card?.attributes.side_id ?? "corp",
     );
 
-    let faction_filters = $state<FactionIds[]>([]);
-
-    let type_filters = $state<CardTypeIds[]>([]);
+    let interpreted_query = $derived(interpretQuery(search_query));
+    let faction_filters = $derived(
+        interpreted_query.filters.flatMap((filter) =>
+            filter.kind === "faction" ? [filter.id] : [],
+        ),
+    );
+    let type_filters = $derived(
+        interpreted_query.filters.flatMap((filter) =>
+            filter.kind === "cardType" ? [filter.id] : [],
+        ),
+    );
 
     let faction_options = $derived<FactionIds[]>(
         [
@@ -79,7 +88,7 @@
     let search_request = 0;
 
     $effect(() => {
-        const query = search_query.trim();
+        const query = interpreted_query.expression;
 
         if (query.length === 0) {
             search_results = side_cards;
@@ -89,7 +98,6 @@
         const request = ++search_request;
 
         searchCards(query, {
-            mode: "interpreted",
             constraint: {
                 clause: "unified_cards.side_id = ?",
                 params: [side],
@@ -101,17 +109,18 @@
         });
     });
 
-    const toggle = <T>(values: T[], value: T): T[] =>
-        values.includes(value)
-            ? values.filter((existing) => existing !== value)
-            : [...values, value];
-
     const on_toggle_faction_change = (faction_id: FactionIds) => {
-        faction_filters = toggle(faction_filters, faction_id);
+        search_query = toggleQueryFilter(interpreted_query, {
+            kind: "faction",
+            id: faction_id,
+        }).expression;
     };
 
     const on_toggle_type_change = (card_type_id: CardTypeIds) => {
-        type_filters = toggle(type_filters, card_type_id);
+        search_query = toggleQueryFilter(interpreted_query, {
+            kind: "cardType",
+            id: card_type_id,
+        }).expression;
     };
 </script>
 

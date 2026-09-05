@@ -1,10 +1,83 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { interpretSearch } from './interpret';
+import { interpretQuery, interpretSearch, toggleQueryFilter } from './interpret';
 import { translateToQuery } from './translate';
 import { populateSubtypeMap } from './vocabulary';
 import { SUBTYPE_FIXTURE } from './subtypes.fixture';
 
 beforeAll(() => populateSubtypeMap(SUBTYPE_FIXTURE));
+
+describe('interpreted query semantics', () => {
+	it('returns the canonical expression and positive natural-language filters', () => {
+		expect(interpretQuery('hb ice')).toMatchObject({
+			expression: 'f:haas_bioroid t:ice',
+			filters: [
+				{ kind: 'faction', id: 'haas_bioroid' },
+				{ kind: 'cardType', id: 'ice' }
+			]
+		});
+	});
+
+	it('derives positive filters from explicit NRDB syntax', () => {
+		expect(interpretQuery('f:anarch t:ice')).toMatchObject({
+			filters: [
+				{ kind: 'faction', id: 'anarch' },
+				{ kind: 'cardType', id: 'ice' }
+			]
+		});
+	});
+
+	it('does not report negative or quoted filters as positive', () => {
+		expect(interpretQuery('f!anarch !(t:ice or f:shaper) "f:criminal"')).toMatchObject({
+			filters: []
+		});
+	});
+
+	it('keeps shared aliases consistent with natural-language interpretation', () => {
+		expect(interpretQuery('neutral ids')).toMatchObject({
+			filters: [
+				{ kind: 'faction', id: 'neutral_corp' },
+				{ kind: 'faction', id: 'neutral_runner' },
+				{ kind: 'cardType', id: 'corp_identity' },
+				{ kind: 'cardType', id: 'runner_identity' }
+			]
+		});
+	});
+
+	it('adds and removes filters by changing the semantic query', () => {
+		const initial = interpretQuery('hb ice');
+		const withoutFaction = toggleQueryFilter(initial, {
+			kind: 'faction',
+			id: 'haas_bioroid'
+		});
+		expect(withoutFaction).toMatchObject({
+			expression: 't:ice',
+			filters: [{ kind: 'cardType', id: 'ice' }]
+		});
+
+		const withFaction = toggleQueryFilter(withoutFaction, {
+			kind: 'faction',
+			id: 'anarch'
+		});
+		expect(withFaction).toMatchObject({
+			expression: 'f:anarch t:ice',
+			filters: [
+				{ kind: 'faction', id: 'anarch' },
+				{ kind: 'cardType', id: 'ice' }
+			]
+		});
+	});
+
+	it('removes only the selected member of a shared alias', () => {
+		const toggled = toggleQueryFilter(interpretQuery('neutral'), {
+			kind: 'faction',
+			id: 'neutral_corp'
+		});
+		expect(toggled).toMatchObject({
+			expression: 'f:neutral_runner',
+			filters: [{ kind: 'faction', id: 'neutral_runner' }]
+		});
+	});
+});
 
 // Pins the interpreted output (snapshot) AND proves that output is valid input for
 // the query builder, not just an unchanged string. translateToQuery feeds the expression

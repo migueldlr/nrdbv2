@@ -1,6 +1,29 @@
 // oxlint-disable typescript/no-explicit-any
 import * as ohm from 'ohm-js';
 
+export type QueryOperator = ':' | '!' | '<' | '<=' | '>' | '>=';
+
+export type QueryValue =
+	| { type: 'literal'; value: string; is_regex: boolean }
+	| { type: 'value_comb'; op: '&' | '|'; left: QueryValue; right: QueryValue };
+
+export type QueryExpression =
+	| {
+			type: 'conjunction';
+			op: 'and' | 'or';
+			left: QueryExpression;
+			right: QueryExpression;
+	  }
+	| { type: 'bracketed'; child: QueryExpression }
+	| { type: 'negate'; child: QueryExpression }
+	| { type: 'pair'; keyword: string; operator: QueryOperator; values: QueryValue };
+
+export type QueryParseResult =
+	| { kind: 'valid'; query: QueryExpression }
+	| { kind: 'invalid'; error: Error };
+
+export type QueryFilterKind = 'faction' | 'cardType';
+
 export const queryGrammar = ohm.grammar(String.raw`
 Query {
   exp
@@ -116,6 +139,7 @@ export interface FullFieldData {
 	sql: { c?: string; p?: string };
 	keywords: string[];
 	documentation: string;
+	filterKind?: QueryFilterKind;
 }
 
 export const fullFields: FullFieldData[] = [
@@ -500,7 +524,8 @@ export const fullFields: FullFieldData[] = [
 		type: 'string',
 		sql: { c: 'unified_cards.card_type_id', p: 'unified_printings.card_type_id' },
 		keywords: ['card_type', 't'],
-		documentation: '`card_type_id` of this card.'
+		documentation: '`card_type_id` of this card.',
+		filterKind: 'cardType'
 	},
 	{
 		type: 'string',
@@ -519,7 +544,8 @@ export const fullFields: FullFieldData[] = [
 		type: 'string',
 		sql: { c: 'unified_cards.faction_id', p: 'unified_printings.faction_id' },
 		keywords: ['faction', 'f'],
-		documentation: '`faction_id` of this card.'
+		documentation: '`faction_id` of this card.',
+		filterKind: 'faction'
 	},
 	{
 		type: 'string',
@@ -733,7 +759,7 @@ function stripText(text: string): string {
 	);
 }
 
-function hasRegex(valuesNode: any): boolean {
+function hasRegex(valuesNode: QueryValue): boolean {
 	if (valuesNode.type === 'literal') {
 		return !!valuesNode.is_regex;
 	}
@@ -743,7 +769,7 @@ function hasRegex(valuesNode: any): boolean {
 	return false;
 }
 
-function compileNode(node: any, fields: FieldData[], where_values: string[]): string {
+function compileNode(node: QueryExpression, fields: FieldData[], where_values: string[]): string {
 	switch (node.type) {
 		case 'conjunction': {
 			const left = compileNode(node.left, fields, where_values);
@@ -789,13 +815,13 @@ function compileNode(node: any, fields: FieldData[], where_values: string[]): st
 			return compileValues(node.values, context, where_values);
 		}
 		default:
-			throw new Error(`Unknown AST node type: ${node.type}`);
+			throw new Error('Unknown AST node type');
 	}
 }
 
 function compileValues(
-	valuesNode: any,
-	context: { field: FieldData; operator: string; negative_op: boolean; keyword: string },
+	valuesNode: QueryValue,
+	context: { field: FieldData; operator: QueryOperator; negative_op: boolean; keyword: string },
 	where_values: string[]
 ): string {
 	if (valuesNode.type === 'literal') {
@@ -811,13 +837,13 @@ function compileValues(
 		const right = compileValues(valuesNode.right, context, where_values);
 		return `(${left}${connector}${right})`;
 	} else {
-		throw new Error(`Unknown values node type: ${valuesNode.type}`);
+		throw new Error('Unknown values node type');
 	}
 }
 
 function compileLiteral(
-	valuesNode: any,
-	context: { field: FieldData; operator: string; negative_op: boolean; keyword: string },
+	valuesNode: Extract<QueryValue, { type: 'literal' }>,
+	context: { field: FieldData; operator: QueryOperator; negative_op: boolean; keyword: string },
 	where_values: string[]
 ): string {
 	if (context.field.type !== 'string' && valuesNode.is_regex) {
@@ -910,6 +936,64 @@ function compileLiteral(
 	}
 }
 
+export function parseQueryExpression(expression: string): QueryParseResult {
+	const matchResult = queryGrammar.match(expression);
+	if (matchResult.failed()) {
+		return { kind: 'invalid', error: new Error(matchResult.message) };
+	}
+
+	return {
+		kind: 'valid',
+		query: semantics(matchResult).eval()
+	};
+}
+
+function serializeLiteral(literal: Extract<QueryValue, { type: 'literal' }>): string {
+	if (literal.is_regex) return `/${literal.value}/`;
+	if (/^[A-Za-z0-9_!-]+$/.test(literal.value)) return literal.value;
+	return `"${literal.value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+function serializeValue(value: QueryValue): string {
+	if (value.type === 'literal') return serializeLiteral(value);
+	const left = serializeValue(value.left);
+	const right =
+		value.right.type === 'value_comb'
+			? `(${serializeValue(value.right)})`
+			: serializeValue(value.right);
+	return `${left}${value.op}${right}`;
+}
+
+function serializeChild(expression: QueryExpression): string {
+	return expression.type === 'conjunction'
+		? `(${serializeQueryExpression(expression)})`
+		: serializeQueryExpression(expression);
+}
+
+export function serializeQueryExpression(expression: QueryExpression): string {
+	switch (expression.type) {
+		case 'conjunction': {
+			const left = serializeChild(expression.left);
+			const right = serializeQueryExpression(expression.right);
+			return expression.op === 'and' ? `${left} ${right}` : `${left} or ${right}`;
+		}
+		case 'bracketed':
+			return `(${serializeQueryExpression(expression.child)})`;
+		case 'negate':
+			return `!${serializeChild(expression.child)}`;
+		case 'pair': {
+			const value = serializeValue(expression.values);
+			return expression.keyword === '_' && expression.operator === ':'
+				? value
+				: `${expression.keyword}${expression.operator}${value}`;
+		}
+	}
+}
+
+export function queryFilterKind(keyword: string): QueryFilterKind | undefined {
+	return fullFields.find((field) => field.keywords.includes(keyword))?.filterKind;
+}
+
 export class SearchQueryBuilder {
 	where: string = '';
 	where_values: string[] = [];
@@ -918,13 +1002,12 @@ export class SearchQueryBuilder {
 
 	constructor(query: string, fields: FieldData[]) {
 		try {
-			const matchResult = queryGrammar.match(query);
-			if (matchResult.failed()) {
-				this.parse_error = new Error(matchResult.message);
+			const parsed = parseQueryExpression(query);
+			if (parsed.kind === 'invalid') {
+				this.parse_error = parsed.error;
 				return;
 			}
-			const ast = semantics(matchResult).eval();
-			this.where = compileNode(ast, fields, this.where_values);
+			this.where = compileNode(parsed.query, fields, this.where_values);
 			// oxlint-disable-next-line no-useless-catch
 		} catch (e: any) {
 			throw e;
