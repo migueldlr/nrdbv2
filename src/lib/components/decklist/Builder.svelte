@@ -14,6 +14,7 @@
     import { group_cards_by_type } from "$lib/utils";
     import { searchCards } from "$lib/search";
     import { interpretSearch } from "$lib/search/interpret";
+    import { toggle_faction_phrase, toggle_type_phrase } from "$lib/search/query_phrase";
     import Icon from "$lib/components/Icon.svelte";
     import CardImage from "../card/CardImage.svelte";
     import Button from "../ui/Button.svelte";
@@ -112,28 +113,18 @@
         });
     });
 
-    const toggle_query_phrase = (phrase: string): void => {
-        const removal = new RegExp(
-            `\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
-            "i",
-        );
-
-        search_query = removal.test(search_query)
-            ? search_query
-                  .replace(removal, "")
-                  .replace(/\s+/g, " ")
-                  .trim()
-            : [...search_query.split(" ").filter(Boolean), phrase].join(
-                  " ",
-              );
-    };
-
     const on_toggle_faction_change = (faction_id: FactionIds) => {
-        toggle_query_phrase(faction_id.replaceAll("_", " "));
+        search_query = toggle_faction_phrase(
+            search_query,
+            faction_id,
+        );
     };
 
     const on_toggle_type_change = (card_type_id: CardTypeIds) => {
-        toggle_query_phrase(card_type_id.replaceAll("_", " "));
+        search_query = toggle_type_phrase(
+            search_query,
+            card_type_id,
+        );
     };
 </script>
 
