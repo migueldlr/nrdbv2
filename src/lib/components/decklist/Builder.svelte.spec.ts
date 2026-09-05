@@ -85,6 +85,51 @@ describe('Decklist Builder', () => {
 		await expect.element(page.getByRole('link', { name: 'Carnivore' })).toBeVisible();
 	});
 
+	it('syncs filter chips with the query through the interpretation', async () => {
+		seedRows(RED_TEAM);
+
+		await render(Builder, {
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE, CARNIVORE]
+		});
+
+		const search = page.getByRole('searchbox');
+		const criminalChip = page.getByRole('button', { name: 'Criminal' });
+		const eventChip = page.getByRole('button', { name: 'Event' });
+
+		// Chips start inactive.
+		await expect.element(criminalChip).toHaveClass('button--ghost');
+		await expect.element(eventChip).toHaveClass('button--ghost');
+
+		// Typing a natural-language faction selector activates its chip.
+		await userEvent.type(search, 'criminal');
+		await vi.waitFor(() => expect.element(criminalChip).toHaveClass('button--primary'));
+
+		// Clicking the active chip removes the filter from the query.
+		await userEvent.click(criminalChip);
+		await vi.waitFor(() => expect.element(criminalChip).toHaveClass('button--ghost'));
+		await expect.element(search).toHaveValue('');
+
+		// Clicking an inactive chip adds the canonical filter to the query.
+		await userEvent.click(criminalChip);
+		await vi.waitFor(() => expect.element(criminalChip).toHaveClass('button--primary'));
+		await expect.element(search).toHaveValue('f:criminal');
+
+		// The canonical query drives the actual card search.
+		await vi.waitFor(() =>
+			expect(sqlMock).toHaveBeenCalledWith(
+				expect.stringContaining('unified_cards.side_id = ?'),
+				expect.anything(),
+				'runner'
+			)
+		);
+
+		// Explicit syntax activates the chip too.
+		await userEvent.fill(search, 'f:criminal t:event');
+		await vi.waitFor(() => expect.element(eventChip).toHaveClass('button--primary'));
+		await expect.element(search).toHaveValue('f:criminal t:event');
+	});
+
 	it('shows the full card pool for a blank query and searches with the full grammar', async () => {
 		seedRows(RED_TEAM);
 

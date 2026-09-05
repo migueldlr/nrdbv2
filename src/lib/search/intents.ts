@@ -10,6 +10,7 @@ import {
 	MAX_PHRASE_WORDS,
 	wordToField
 } from './vocabulary';
+import type { CardTypeIds, FactionIds } from '$lib/types';
 import {
 	RE_GTE_WORDS,
 	RE_LTE_WORDS,
@@ -39,12 +40,12 @@ export interface SideIntent {
 }
 export interface FactionIntent {
 	kind: 'faction';
-	value: string | string[];
+	value: FactionIds | FactionIds[];
 	negated: boolean;
 }
 export interface TypeIntent {
 	kind: 'type';
-	value: string | string[];
+	value: CardTypeIds | CardTypeIds[];
 	negated: boolean;
 }
 export interface SubtypeIntent {
@@ -205,6 +206,44 @@ export function extractNumericIntents(normalized: string): {
 	});
 
 	return { intents, remainder };
+}
+
+// Matches an explicit NRDB field token for the faction/type filters: `f:anarch`,
+// `t:ice`, negated `f!anarch`. The value is a bare literal (underscores allowed);
+// quoted values are left alone because they are handled as quoted terms upstream.
+const RE_EXPLICIT_FILTER = /^\b(f|t)([:!])(\w+)$/;
+
+// Recognizes explicit `f:`/`t:` field tokens and emits the same FactionIntent /
+// TypeIntent the natural-language matcher produces, so both syntaxes share one
+// semantic representation. The value must resolve through the same vocabulary maps
+// (FACTION_MAP / CARD_TYPE_MAP); an unresolvable value stays a freeform token so the
+// query builder can reject it with its usual error.
+export function extractExplicitFilterIntents(remainder: string): {
+	intents: Intent[];
+	remainder: string;
+} {
+	const intents: Intent[] = [];
+	const words = remainder.trim().split(/\s+/).filter(Boolean);
+	const kept: string[] = [];
+
+	for (const word of words) {
+		const m = RE_EXPLICIT_FILTER.exec(word);
+		if (!m) {
+			kept.push(word);
+			continue;
+		}
+		const [, field, op, rawValue] = m;
+		const negated = op === '!';
+		if (field === 'f' && rawValue in FACTION_MAP) {
+			intents.push({ kind: 'faction', value: FACTION_MAP[rawValue], negated });
+		} else if (field === 't' && rawValue in CARD_TYPE_MAP) {
+			intents.push({ kind: 'type', value: CARD_TYPE_MAP[rawValue], negated });
+		} else {
+			kept.push(word);
+		}
+	}
+
+	return { intents, remainder: kept.join(' ') };
 }
 
 export function recognizeIntents(remainder: string): Intent[] {

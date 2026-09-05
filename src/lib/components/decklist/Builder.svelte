@@ -13,6 +13,10 @@
     } from "$lib/constants";
     import { group_cards_by_type } from "$lib/utils";
     import { searchCards } from "$lib/search";
+    import {
+        interpretQuery,
+        toggleQueryFilter,
+    } from "$lib/search/interpret";
     import Icon from "$lib/components/Icon.svelte";
     import CardImage from "../card/CardImage.svelte";
     import Button from "../ui/Button.svelte";
@@ -44,9 +48,9 @@
         identity_card?.attributes.side_id ?? "corp",
     );
 
-    let faction_filters = $state<FactionIds[]>([]);
-
-    let type_filters = $state<CardTypeIds[]>([]);
+    let {
+        filters: { factionIds: faction_filters, cardTypeIds: type_filters },
+    } = $derived(interpretQuery(search_query));
 
     let faction_options = $derived<FactionIds[]>(
         [
@@ -101,17 +105,18 @@
         });
     });
 
-    const toggle = <T>(values: T[], value: T): T[] =>
-        values.includes(value)
-            ? values.filter((existing) => existing !== value)
-            : [...values, value];
-
     const on_toggle_faction_change = (faction_id: FactionIds) => {
-        faction_filters = toggle(faction_filters, faction_id);
+        search_query = toggleQueryFilter(search_query, {
+            kind: "faction",
+            id: faction_id,
+        });
     };
 
     const on_toggle_type_change = (card_type_id: CardTypeIds) => {
-        type_filters = toggle(type_filters, card_type_id);
+        search_query = toggleQueryFilter(search_query, {
+            kind: "type",
+            id: card_type_id,
+        });
     };
 </script>
 

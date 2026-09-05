@@ -4,7 +4,9 @@ export interface VocabOption {
 	name: string;
 }
 
-export const FACTION_MAP: Record<string, string | string[]> = {
+import type { CardTypeIds, FactionIds } from '$lib/types';
+
+export const FACTION_MAP: Record<string, FactionIds | FactionIds[]> = {
 	shaper: 'shaper',
 	anarch: 'anarch',
 	criminal: 'criminal',
@@ -16,14 +18,19 @@ export const FACTION_MAP: Record<string, string | string[]> = {
 	weyland: 'weyland_consortium',
 	'weyland-consortium': 'weyland_consortium',
 	'weyland consortium': 'weyland_consortium',
+	weyland_consortium: 'weyland_consortium',
 	haas: 'haas_bioroid',
 	'haas-bioroid': 'haas_bioroid',
 	'haas bioroid': 'haas_bioroid',
+	haas_bioroid: 'haas_bioroid',
 	hb: 'haas_bioroid',
 	sunny: 'sunny_lebeau',
 	'sunny lebeau': 'sunny_lebeau',
+	sunny_lebeau: 'sunny_lebeau',
 	'neutral corp': 'neutral_corp',
 	'neutral runner': 'neutral_runner',
+	neutral_corp: 'neutral_corp',
+	neutral_runner: 'neutral_runner',
 	neutral: ['neutral_corp', 'neutral_runner']
 };
 
@@ -34,7 +41,7 @@ export const SIDE_MAP: Record<string, string> = {
 	corporation: 'corp'
 };
 
-export const CARD_TYPE_MAP: Record<string, string | string[]> = {
+export const CARD_TYPE_MAP: Record<string, CardTypeIds | CardTypeIds[]> = {
 	'runner identity': 'runner_identity',
 	'runner identities': 'runner_identity',
 	'corp identity': 'corp_identity',
@@ -58,7 +65,9 @@ export const CARD_TYPE_MAP: Record<string, string | string[]> = {
 	identity: ['corp_identity', 'runner_identity'],
 	identities: ['corp_identity', 'runner_identity'],
 	ids: ['corp_identity', 'runner_identity'],
-	id: ['corp_identity', 'runner_identity']
+	id: ['corp_identity', 'runner_identity'],
+	runner_identity: 'runner_identity',
+	corp_identity: 'corp_identity'
 };
 
 // Populated at runtime by populateSubtypeMap; maps a typed phrase to its `s:` filter token.
