@@ -118,4 +118,57 @@ describe('Decklist Builder', () => {
 		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
 		expect(page.getByRole('link', { name: 'Sure Gamble' }).query()).toBeNull();
 	});
+
+	it('synchronizes chips with natural-language input', async () => {
+		await render(Builder, {
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, SURE_GAMBLE]
+		});
+
+		const search = page.getByRole('searchbox');
+		const criminal = page.getByRole('button', { name: 'Criminal' });
+		const neutral = page.getByRole('button', { name: 'Neutral' });
+
+		await expect
+			.element(page.getByRole('button', { name: 'Criminal', pressed: false }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Event', pressed: false }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: false }))
+			.toBeVisible();
+
+		await userEvent.type(search, 'criminal events');
+		await expect
+			.element(page.getByRole('button', { name: 'Criminal', pressed: true }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Event', pressed: true }))
+			.toBeVisible();
+
+		await userEvent.click(criminal);
+		await expect.element(search).toHaveValue('events');
+		await expect
+			.element(page.getByRole('button', { name: 'Criminal', pressed: false }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Event', pressed: true }))
+			.toBeVisible();
+
+		await userEvent.fill(search, 'neutral');
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: true }))
+			.toBeVisible();
+		await userEvent.click(neutral);
+		await expect.element(search).toHaveValue('');
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: false }))
+			.toBeVisible();
+		await userEvent.click(neutral);
+		await expect.element(search).toHaveValue('neutral');
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: true }))
+			.toBeVisible();
+	});
 });

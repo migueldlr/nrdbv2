@@ -1,10 +1,12 @@
+import type { CardTypeIds, FactionIds } from '$lib/types';
+
 // id/name pairs for dynamic vocab, decoupled from any store/filter type.
 export interface VocabOption {
 	id: string;
 	name: string;
 }
 
-export const FACTION_MAP: Record<string, string | string[]> = {
+export const FACTION_MAP: Record<string, FactionIds | FactionIds[]> = {
 	shaper: 'shaper',
 	anarch: 'anarch',
 	criminal: 'criminal',
@@ -34,7 +36,7 @@ export const SIDE_MAP: Record<string, string> = {
 	corporation: 'corp'
 };
 
-export const CARD_TYPE_MAP: Record<string, string | string[]> = {
+export const CARD_TYPE_MAP: Record<string, CardTypeIds | CardTypeIds[]> = {
 	'runner identity': 'runner_identity',
 	'runner identities': 'runner_identity',
 	'corp identity': 'corp_identity',

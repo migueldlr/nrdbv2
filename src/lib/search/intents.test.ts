@@ -15,6 +15,9 @@ import { SUBTYPE_FIXTURE } from './subtypes.fixture';
 
 beforeAll(() => populateSubtypeMap(SUBTYPE_FIXTURE));
 
+const recognizedIntents = (remainder: string): Intent[] =>
+	recognizeIntents(remainder).map(({ intent }) => intent);
+
 // ===== Phase 1: normalizeInput =====
 
 describe('normalizeInput', () => {
@@ -251,18 +254,21 @@ describe('extractNumericIntents', () => {
 // ===== Phase 3: recognizeIntents =====
 
 describe('recognizeIntents', () => {
-	it('recognizes a single faction', () => {
-		const intents = recognizeIntents('shaper');
-		expect(intents).toHaveLength(1);
-		expect(intents[0]).toMatchObject<FactionIntent>({
-			kind: 'faction',
-			value: 'shaper',
-			negated: false
+	it('recognizes a single faction and preserves its phrase', () => {
+		const matches = recognizeIntents('shaper');
+		expect(matches).toHaveLength(1);
+		expect(matches[0]).toMatchObject({
+			phrase: 'shaper',
+			intent: {
+				kind: 'faction',
+				value: 'shaper',
+				negated: false
+			} satisfies FactionIntent
 		});
 	});
 
-	it('recognizes a negated faction from non_ sentinel', () => {
-		const intents = recognizeIntents('non_shaper');
+	it('recognizes the internal non_ sentinel produced by normalization', () => {
+		const intents = recognizedIntents('non_shaper');
 		expect(intents[0]).toMatchObject<FactionIntent>({
 			kind: 'faction',
 			value: 'shaper',
@@ -271,18 +277,18 @@ describe('recognizeIntents', () => {
 	});
 
 	it('matches multi-word subtype as a single intent', () => {
-		const intents = recognizeIntents('code gate');
+		const intents = recognizedIntents('code gate');
 		expect(intents).toHaveLength(1);
 		expect(intents[0]).toMatchObject({ kind: 'subtype', value: '"code gate"' });
 	});
 
 	it('disambiguates "corp" as side, not subtype', () => {
-		const intents = recognizeIntents('corp');
+		const intents = recognizedIntents('corp');
 		expect(intents[0]).toMatchObject({ kind: 'side', value: 'corp' });
 	});
 
 	it('"runner identity" produces a single type intent', () => {
-		const intents = recognizeIntents('runner identity');
+		const intents = recognizedIntents('runner identity');
 		expect(intents).toHaveLength(1);
 		expect(intents[0]).toMatchObject<TypeIntent>({
 			kind: 'type',
@@ -292,17 +298,17 @@ describe('recognizeIntents', () => {
 	});
 
 	it('"or" produces an or_marker intent', () => {
-		const intents = recognizeIntents('shaper or criminal');
+		const intents = recognizedIntents('shaper or criminal');
 		expect(intents[1]).toMatchObject({ kind: 'or_marker' });
 	});
 
 	it('drops bare digits silently', () => {
-		const intents = recognizeIntents('5');
+		const intents = recognizedIntents('5');
 		expect(intents).toHaveLength(0);
 	});
 
 	it('emits freeform intent for unknown words', () => {
-		const intents = recognizeIntents('mestnichestvo');
+		const intents = recognizedIntents('mestnichestvo');
 		expect(intents[0]).toMatchObject({
 			kind: 'freeform',
 			word: 'mestnichestvo'
@@ -310,17 +316,17 @@ describe('recognizeIntents', () => {
 	});
 
 	it('negates boolean: non_unique produces value 0', () => {
-		const intents = recognizeIntents('non_unique');
+		const intents = recognizedIntents('non_unique');
 		expect(intents[0]).toMatchObject({ kind: 'boolean', field: 'u', value: 0 });
 	});
 
 	it('positive boolean: unique produces value 1', () => {
-		const intents = recognizeIntents('unique');
+		const intents = recognizedIntents('unique');
 		expect(intents[0]).toMatchObject({ kind: 'boolean', field: 'u', value: 1 });
 	});
 
 	it('recognizes ids as array-valued type', () => {
-		const intents = recognizeIntents('ids');
+		const intents = recognizedIntents('ids');
 		expect(intents[0]).toMatchObject<TypeIntent>({
 			kind: 'type',
 			value: ['corp_identity', 'runner_identity'],
