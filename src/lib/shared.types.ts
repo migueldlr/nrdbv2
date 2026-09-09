@@ -19,7 +19,6 @@ export type CardTypeIds =
 	| 'runner_identity'
 	| 'upgrade';
 
-// TODO: get all available subtypes
 export type CardSubTypeIds = string;
 
 export type FactionIds =
