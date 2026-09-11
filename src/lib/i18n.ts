@@ -1,4 +1,5 @@
 import { m } from './paraglide/messages.js';
+import type { DeckFormat } from './deck_formats';
 import type { FactionIds, CardTypeIds, Publishers, CardSubTypeIds } from './types.js';
 
 export const factions: Record<FactionIds, string> = {
@@ -17,6 +18,13 @@ export const factions: Record<FactionIds, string> = {
 };
 
 export const faction_name = (faction_id: FactionIds): string => factions[faction_id];
+
+export const formats: Record<DeckFormat, string> = {
+	core: 'Core',
+	startup: m.startup(),
+	standard: m.standard(),
+	eternal: m.eternal()
+};
 
 export const card_types: Record<CardTypeIds, string> = {
 	agenda: m.agenda(),
