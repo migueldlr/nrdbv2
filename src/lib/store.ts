@@ -34,3 +34,14 @@ export const theme = writable<'light' | 'dark' | null>(null);
 
 // True once the SQLite DB has been confirmed present (or downloaded) in OPFS
 export const db_ready = writable<boolean>(false);
+
+// The card shown in the global card modal, or null when closed
+export const card_modal = writable<{ card: Card } | null>(null);
+
+export function open_card_modal(card: Card) {
+	card_modal.set({ card });
+}
+
+export function close_card_modal() {
+	card_modal.set(null);
+}
