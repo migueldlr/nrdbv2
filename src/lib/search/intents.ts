@@ -31,6 +31,7 @@ import {
 	RE_BARE_NUMBER_OR_FIELD,
 	RE_BARE_NUMBER_FIELD
 } from './patterns';
+import type { CardTypeIds, FactionIds } from '$lib/types';
 
 export interface SideIntent {
 	kind: 'side';
@@ -39,12 +40,12 @@ export interface SideIntent {
 }
 export interface FactionIntent {
 	kind: 'faction';
-	value: string | string[];
+	value: FactionIds | FactionIds[];
 	negated: boolean;
 }
 export interface TypeIntent {
 	kind: 'type';
-	value: string | string[];
+	value: CardTypeIds | CardTypeIds[];
 	negated: boolean;
 }
 export interface SubtypeIntent {
@@ -106,6 +107,11 @@ export type Intent =
 	| OrMarkerIntent;
 
 export type StructuredIntent = Exclude<Intent, OrMarkerIntent>;
+
+export interface IntentMatch {
+	intent: Intent;
+	phrase: string;
+}
 
 // Must stay in sync with resolveNeutralFaction on the consuming side.
 export const NEUTRAL_FACTION_OR_QUERY = '(f:neutral_corp or f:neutral_runner)';
@@ -207,7 +213,7 @@ export function extractNumericIntents(normalized: string): {
 	return { intents, remainder };
 }
 
-export function recognizeIntents(remainder: string): Intent[] {
+export function recognizeIntents(remainder: string): IntentMatch[] {
 	const rawWords = remainder.trim().split(/\s+/).filter(Boolean);
 
 	const words: string[] = [];
@@ -225,15 +231,19 @@ export function recognizeIntents(remainder: string): Intent[] {
 		}
 	}
 
-	const intents: Intent[] = [];
+	const matches: IntentMatch[] = [];
 	let i = 0;
 
 	while (i < words.length) {
 		const negated = negatedSet.has(i);
-		i += matchAt(words, i, negated, intents);
+		const intents: Intent[] = [];
+		const consumed = matchAt(words, i, negated, intents);
+		const phrase = words.slice(i, i + consumed).join(' ');
+		matches.push(...intents.map((intent) => ({ intent, phrase })));
+		i += consumed;
 	}
 
-	return intents;
+	return matches;
 }
 
 // Matches the longest phrase at index i and returns words consumed. Lookup order
@@ -323,17 +333,12 @@ interface OrGroupIntent {
 
 type AssemblyItem = StructuredIntent | OrGroupIntent;
 
-// Negated array factions/types are AND-negation, not OR alternatives, so they aren't expanded.
 function expandForOrGroup(intent: StructuredIntent): StructuredIntent[] {
-	if (
-		(intent.kind === 'faction' || intent.kind === 'type') &&
-		Array.isArray(intent.value) &&
-		!intent.negated
-	) {
-		const { kind } = intent;
-		return (intent.value as string[]).map(
-			(v) => ({ kind, value: v, negated: false }) as StructuredIntent
-		);
+	if (intent.kind === 'faction' && Array.isArray(intent.value) && !intent.negated) {
+		return intent.value.map((value) => ({ kind: 'faction', value, negated: false }));
+	}
+	if (intent.kind === 'type' && Array.isArray(intent.value) && !intent.negated) {
+		return intent.value.map((value) => ({ kind: 'type', value, negated: false }));
 	}
 	return [intent];
 }
