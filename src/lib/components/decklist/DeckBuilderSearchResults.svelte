@@ -6,7 +6,9 @@
     import Influence from "$lib/components/Influence.svelte";
     import { tooltip } from "$lib/actions";
     import { localizeHref } from "$lib/paraglide/runtime";
+    import { close_card_modal, open_card_modal } from "$lib/store";
     import Button from "../ui/Button.svelte";
+    import ToggleGroup from "$lib/components/ui/ToggleGroup.svelte";
 
     interface Props {
         readonly cards: readonly Card[];
@@ -29,6 +31,44 @@
         deck = next;
     };
 
+    const select_quantity = (card: Card, quantity: number) => {
+        set_quantity(card, quantity);
+        close_card_modal();
+    };
+
+    const on_card_key_down = (event: KeyboardEvent, card: Card) => {
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        if (!/^[0-9]$/.test(event.key)) return;
+
+        const quantity = Number(event.key);
+        if (quantity > card.attributes.deck_limit) return;
+
+        event.preventDefault();
+        select_quantity(card, quantity);
+    };
+
+    export function open_card(card: Card) {
+        open_card_modal(card, {
+            actions: card_actions,
+            on_card_key_down: (event) => on_card_key_down(event, card),
+        });
+    }
+
+    const open_card_from_click = (event: MouseEvent, card: Card) => {
+        if (
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+        open_card(card);
+    };
+
     const increment = (card: Card) => {
         set_quantity(card, get_quantity(card) + 1);
     };
@@ -37,6 +77,23 @@
         set_quantity(card, get_quantity(card) - 1);
     };
 </script>
+
+{#snippet card_actions(card: Card)}
+    {@const quantity_options = Array.from(
+        { length: card.attributes.deck_limit + 1 },
+        (_, quantity) => ({
+            value: String(quantity),
+            label: String(quantity),
+        }),
+    )}
+    <ToggleGroup
+        options={quantity_options}
+        label="Copies in deck"
+        size="sm"
+        selected={String(get_quantity(card))}
+        onselect={(value) => select_quantity(card, Number(value))}
+    />
+{/snippet}
 
 <table>
     <thead>
@@ -84,6 +141,9 @@
                     <a
                         href={localizeHref(`/card/${result.id}`)}
                         use:tooltip={result}
+                        aria-haspopup="dialog"
+                        onclick={(event) =>
+                            open_card_from_click(event, result)}
                     >
                         {result.attributes.title}
                     </a>

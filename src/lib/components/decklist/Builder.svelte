@@ -90,6 +90,10 @@
 
     let search_results = $state<TCard[]>([]);
 
+    let search_results_component:
+        | { open_card: (card: TCard) => void }
+        | undefined = $state();
+
     let search_request = 0;
 
     $effect(() => {
@@ -126,6 +130,16 @@
             kind: "cardType",
             id: card_type_id,
         });
+    };
+
+    const on_search_keydown = (event: KeyboardEvent) => {
+        if (event.key !== "Enter") return;
+
+        const first = search_results[0];
+        if (!first) return;
+
+        event.preventDefault();
+        search_results_component?.open_card(first);
     };
 </script>
 
@@ -181,6 +195,7 @@
                 type="search"
                 placeholder="Find a card or filter the list"
                 bind:value={search_query}
+                onkeydown={on_search_keydown}
             />
 
             <div class="builder__filters">
@@ -227,7 +242,11 @@
                 </section>
             </div>
 
-            <DeckBuilderSearchResults cards={search_results} bind:deck />
+            <DeckBuilderSearchResults
+                cards={search_results}
+                bind:deck
+                bind:this={search_results_component}
+            />
             {#if search_results.length === 0}
                 <p class="builder__empty">No cards found</p>
             {/if}
