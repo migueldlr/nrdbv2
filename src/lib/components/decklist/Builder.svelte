@@ -88,9 +88,7 @@
         }),
     );
 
-    const format_clause = $derived(
-        format === "eternal" ? "" : `format:${format}`,
-    );
+    const format_clause = $derived(format === "all" ? "" : `format:${format}`);
 
     let grouped_cards = $derived<CardGroup[]>(
         group_cards_by_type(side_cards),

@@ -23,7 +23,8 @@ export const formats: Record<DeckFormat, string> = {
 	core: 'Core',
 	startup: m.startup(),
 	standard: m.standard(),
-	eternal: m.eternal()
+	eternal: m.eternal(),
+	all: 'All'
 };
 
 export const card_types: Record<CardTypeIds, string> = {

@@ -33,7 +33,7 @@ function renderBuilder(props: {
 	on_select_format?: (format: DeckFormat) => void;
 }) {
 	return render(Builder, {
-		format: 'eternal',
+		format: 'all',
 		on_select_format: () => {},
 		...props
 	});
@@ -209,5 +209,36 @@ describe('Decklist Builder', () => {
 
 		await userEvent.click(page.getByRole('button', { name: 'Startup' }));
 		expect(on_select_format).toHaveBeenCalledWith('startup');
+	});
+
+	it('applies the format clause even without a search query', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM],
+			format: 'eternal'
+		});
+
+		await vi.waitFor(() =>
+			expect(sqlMock).toHaveBeenCalledWith(
+				expect.stringContaining('format_id = ?'),
+				'eternal',
+				'eternal',
+				'runner'
+			)
+		);
+	});
+
+	it('shows the whole side pool without a format clause for the all format', async () => {
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE],
+			format: 'all'
+		});
+
+		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
+		await expect.element(page.getByRole('link', { name: 'Sure Gamble' })).toBeVisible();
+		expect(sqlMock).not.toHaveBeenCalled();
 	});
 });
