@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CARNIVORE, RED_TEAM, SURE_GAMBLE } from '$lib/cards.fixture';
 import { ESA, ZAHYA } from '$lib/identities.fixture';
+import { createMockCard } from '$lib/test-helpers';
 import type { Card } from '$lib/types';
 import Builder from './Builder.svelte';
 
@@ -12,6 +13,7 @@ const { sqlMock, adaptCardMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('$lib/sqlite', () => ({ sql: sqlMock }));
+vi.mock('$lib/printings', () => ({ getPrintingById: vi.fn().mockResolvedValue(null) }));
 vi.mock('$lib/adapter', async (importOriginal) => ({
 	...(await importOriginal<typeof import('$lib/adapter')>()),
 	adaptCard: adaptCardMock
@@ -117,6 +119,46 @@ describe('Decklist Builder', () => {
 
 		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
 		expect(page.getByRole('link', { name: 'Sure Gamble' }).query()).toBeNull();
+	});
+
+	it('opens the card modal from the title and sets quantity from its toggle group', async () => {
+		seedRows(RED_TEAM);
+
+		await render(Builder, {
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM]
+		});
+
+		await userEvent.click(page.getByRole('link', { name: 'Red Team' }));
+
+		const dialog = page.getByRole('dialog', { name: 'Red Team' });
+		await expect.element(dialog).toBeVisible();
+
+		await userEvent.click(dialog.getByRole('button', { name: '2' }));
+
+		await expect
+			.element(page.getByRole('button', { name: 'Red Team, 2 copies' }))
+			.toBeVisible();
+		await expect
+			.element(dialog.getByRole('button', { name: '2', pressed: true }))
+			.toBeVisible();
+	});
+
+	it('scales the modal quantity buttons to the card deck limit', async () => {
+		const limited = createMockCard('limited_card', 'Limited Card', ['core'], {
+			deck_limit: 1
+		});
+
+		await render(Builder, {
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, limited]
+		});
+
+		await userEvent.click(page.getByRole('link', { name: 'Limited Card' }));
+
+		const dialog = page.getByRole('dialog', { name: 'Limited Card' });
+		await expect.element(dialog.getByRole('button', { name: '1' })).toBeVisible();
+		expect(dialog.getByRole('button', { name: '2' }).query()).toBeNull();
 	});
 
 	it('synchronizes chips with natural-language input', async () => {

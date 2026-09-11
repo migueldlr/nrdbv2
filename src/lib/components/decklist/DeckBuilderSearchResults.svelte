@@ -7,6 +7,8 @@
     import { tooltip } from "$lib/actions";
     import { localizeHref } from "$lib/paraglide/runtime";
     import Button from "../ui/Button.svelte";
+    import Modal from "$lib/components/card/Modal.svelte";
+    import ToggleGroup from "$lib/components/ui/ToggleGroup.svelte";
 
     interface Props {
         readonly cards: readonly Card[];
@@ -14,8 +16,24 @@
     }
 
     let { cards, deck = $bindable() }: Props = $props();
+    let selected_card = $state<Card | null>(null);
 
     const get_quantity = (card: Card): number => deck[card.id] ?? 0;
+
+    const open_card_modal = (event: MouseEvent, card: Card) => {
+        if (
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+        selected_card = card;
+    };
 
     const set_quantity = (card: Card, quantity: number) => {
         const next = { ...deck };
@@ -84,6 +102,8 @@
                     <a
                         href={localizeHref(`/card/${result.id}`)}
                         use:tooltip={result}
+                        aria-haspopup="dialog"
+                        onclick={(event) => open_card_modal(event, result)}
                     >
                         {result.attributes.title}
                     </a>
@@ -123,6 +143,31 @@
         {/each}
     </tbody>
 </table>
+
+{#if selected_card}
+    <Modal
+        card={selected_card}
+        open
+        onOpenChange={() => (selected_card = null)}
+    >
+        {#snippet actions(card)}
+            {@const quantity_options = Array.from(
+                { length: card.attributes.deck_limit + 1 },
+                (_, quantity) => ({
+                    value: String(quantity),
+                    label: String(quantity),
+                }),
+            )}
+            <ToggleGroup
+                options={quantity_options}
+                label="Copies in deck"
+                size="sm"
+                selected={String(get_quantity(card))}
+                onselect={(value) => set_quantity(card, Number(value))}
+            />
+        {/snippet}
+    </Modal>
+{/if}
 
 <style>
     .builder__quantity {
