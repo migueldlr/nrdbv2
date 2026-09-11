@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import type { Snippet } from 'svelte';
 import type { Card, Printing } from './types';
 
 export const search_query = writable<string>('');
@@ -36,10 +37,20 @@ export const theme = writable<'light' | 'dark' | null>(null);
 export const db_ready = writable<boolean>(false);
 
 // The card shown in the global card modal, or null when closed
-export const cardModal = writable<{ card: Card } | null>(null);
+export const cardModal = writable<{
+	card: Card;
+	actions?: Snippet<[Card]>;
+	onCardKeyDown?: (event: KeyboardEvent) => void;
+} | null>(null);
 
-export function openCardModal(card: Card) {
-	cardModal.set({ card });
+export function openCardModal(
+	card: Card,
+	options: {
+		actions?: Snippet<[Card]>;
+		onCardKeyDown?: (event: KeyboardEvent) => void;
+	} = {}
+) {
+	cardModal.set({ card, ...options });
 }
 
 export function closeCardModal() {

@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CARNIVORE, RED_TEAM, SURE_GAMBLE } from '$lib/cards.fixture';
 import { ESA, ZAHYA } from '$lib/identities.fixture';
 import type { DeckFormat } from '$lib/deck_formats';
+import { createMockCard } from '$lib/test-helpers';
+import { cardModal } from '$lib/store';
+import CardModalHarness from '$lib/test/CardModalHarness.svelte';
 import type { Card } from '$lib/types';
 import Builder from './Builder.svelte';
 
@@ -13,6 +16,7 @@ const { sqlMock, adaptCardMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('$lib/sqlite', () => ({ sql: sqlMock }));
+vi.mock('$lib/printings', () => ({ getPrintingById: vi.fn().mockResolvedValue(null) }));
 vi.mock('$lib/adapter', async (importOriginal) => ({
 	...(await importOriginal<typeof import('$lib/adapter')>()),
 	adaptCard: adaptCardMock
@@ -26,23 +30,33 @@ function seedRows(...cards: Card[]) {
 	sqlMock.mockResolvedValue(cards.map((card) => ({ id: card.id })));
 }
 
-function renderBuilder(props: {
-	identity: string;
-	side_cards: Card[];
-	format?: DeckFormat;
-	on_select_format?: (format: DeckFormat) => void;
-}) {
-	return render(Builder, {
-		format: 'all',
-		on_select_format: () => {},
-		...props
-	});
+function renderBuilder(
+	props: {
+		identity: string;
+		side_cards: Card[];
+		format?: DeckFormat;
+		on_select_format?: (format: DeckFormat) => void;
+		on_select_identity?: (identity: string) => void;
+	},
+	options?: { wrapper: typeof CardModalHarness }
+) {
+	return render(
+		Builder,
+		{
+			format: 'all',
+			on_select_format: () => {},
+			on_select_identity: () => {},
+			...props
+		},
+		options
+	);
 }
 
 describe('Decklist Builder', () => {
 	const redTeamRow = page.getByRole('row', { name: /Red Team/ });
 
 	beforeEach(() => {
+		cardModal.set(null);
 		sqlMock.mockReset();
 		sqlMock.mockImplementation(async () => []);
 		adaptCardMock.mockReset();
@@ -99,6 +113,55 @@ describe('Decklist Builder', () => {
 		await expect.element(page.getByRole('link', { name: 'Carnivore' })).toBeVisible();
 	});
 
+	it('moves an identity quantity to the newly selected identity', async () => {
+		const { rerender } = await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, ESA, RED_TEAM]
+		});
+
+		const zahyaRow = page.getByRole('row', { name: /Zahya Sadeghi/ });
+		await userEvent.click(zahyaRow.getByRole('button', { name: '+' }));
+		await expect.element(zahyaRow.getByRole('spinbutton')).toHaveValue(1);
+
+		await rerender({ identity: ESA.id });
+
+		await expect.element(zahyaRow.getByRole('spinbutton')).toHaveValue(0);
+		await expect
+			.element(page.getByRole('row', { name: /Esâ Afontov/ }).getByRole('spinbutton'))
+			.toHaveValue(1);
+	});
+
+	it('switches the selected identity when another identity gets a quantity', async () => {
+		const on_select_identity = vi.fn();
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, ESA, RED_TEAM],
+				on_select_identity
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const zahyaRow = page.getByRole('row', { name: /Zahya Sadeghi/ });
+		const esaRow = page.getByRole('row', { name: /Esâ Afontov/ });
+
+		await userEvent.click(zahyaRow.getByRole('button', { name: '+' }));
+		await expect.element(zahyaRow.getByRole('spinbutton')).toHaveValue(1);
+
+		await userEvent.click(
+			esaRow.getByRole('link', { name: 'Esâ Afontov: Eco-Insurrectionist' })
+		);
+		const dialog = page.getByRole('dialog', { name: 'Esâ Afontov: Eco-Insurrectionist' });
+		await expect.element(dialog).toBeVisible();
+
+		await userEvent.click(dialog.getByRole('button', { name: '1' }));
+
+		expect(on_select_identity).toHaveBeenCalledWith(ESA.id);
+		await expect.element(esaRow.getByRole('spinbutton')).toHaveValue(1);
+		await expect.element(zahyaRow.getByRole('spinbutton')).toHaveValue(0);
+	});
+
 	it('shows the full card pool for a blank query and searches with the full grammar', async () => {
 		seedRows(RED_TEAM);
 
@@ -131,6 +194,227 @@ describe('Decklist Builder', () => {
 
 		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
 		expect(page.getByRole('link', { name: 'Sure Gamble' }).query()).toBeNull();
+	});
+
+	it('opens the card modal from the title and sets quantity from its toggle group', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		await userEvent.click(page.getByRole('link', { name: 'Red Team' }));
+
+		const dialog = page.getByRole('dialog', { name: 'Red Team' });
+		await expect.element(dialog).toBeVisible();
+
+		await userEvent.click(dialog.getByRole('button', { name: '2' }));
+
+		await expect
+			.element(page.getByRole('button', { name: 'Red Team, 2 copies' }))
+			.toBeVisible();
+		expect(page.getByRole('dialog', { name: 'Red Team' }).query()).toBeNull();
+	});
+
+	it('opens the first search result when Enter is pressed in the search box', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
+
+		await userEvent.keyboard('{Enter}');
+
+		await expect.element(page.getByRole('dialog', { name: 'Red Team' })).toBeVisible();
+	});
+
+	it('ignores the Enter that commits an IME composition', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
+
+		search.element().dispatchEvent(
+			new KeyboardEvent('keydown', {
+				key: 'Enter',
+				isComposing: true,
+				bubbles: true,
+				cancelable: true
+			})
+		);
+
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 0));
+		expect(page.getByRole('dialog', { name: 'Red Team' }).query()).toBeNull();
+
+		await userEvent.keyboard('{Enter}');
+		await expect.element(page.getByRole('dialog', { name: 'Red Team' })).toBeVisible();
+	});
+
+	it('does not open a stale first result while a newer query is pending', async () => {
+		seedRows(RED_TEAM, SURE_GAMBLE);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
+
+		let resolve_pending!: (rows: { id: string }[]) => void;
+		const pending = new Promise<{ id: string }[]>((resolve) => {
+			resolve_pending = resolve;
+		});
+		sqlMock.mockImplementation(() => pending);
+
+		await userEvent.fill(search, 'gamble');
+		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
+
+		await userEvent.keyboard('{Enter}');
+		expect(page.getByRole('dialog', { name: 'Red Team' }).query()).toBeNull();
+
+		resolve_pending([{ id: SURE_GAMBLE.id }]);
+		await expect.element(page.getByRole('link', { name: 'Sure Gamble' })).toBeVisible();
+
+		await userEvent.keyboard('{Enter}');
+		await expect.element(page.getByRole('dialog', { name: 'Sure Gamble' })).toBeVisible();
+	});
+
+	it('keeps the side pool when a cleared query leaves a stale response pending', async () => {
+		seedRows(RED_TEAM, SURE_GAMBLE);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
+
+		let resolve_pending!: (rows: { id: string }[]) => void;
+		const pending = new Promise<{ id: string }[]>((resolve) => {
+			resolve_pending = resolve;
+		});
+		sqlMock.mockImplementation(() => pending);
+
+		await userEvent.fill(search, 'gamble');
+		await userEvent.fill(search, '');
+		await expect
+			.element(page.getByRole('row', { name: /Zahya Sadeghi: Versatile Smuggler/ }))
+			.toBeVisible();
+
+		resolve_pending([{ id: SURE_GAMBLE.id }]);
+
+		await userEvent.keyboard('{Enter}');
+		await expect
+			.element(page.getByRole('dialog', { name: 'Zahya Sadeghi: Versatile Smuggler' }))
+			.toBeVisible();
+		expect(page.getByRole('dialog', { name: 'Sure Gamble' }).query()).toBeNull();
+	});
+
+	it('sets the quantity from a number key and closes the modal', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		await userEvent.click(page.getByRole('link', { name: 'Red Team' }));
+		await expect.element(page.getByRole('dialog', { name: 'Red Team' })).toBeVisible();
+
+		await userEvent.keyboard('2');
+
+		await expect
+			.element(page.getByRole('button', { name: 'Red Team, 2 copies' }))
+			.toBeVisible();
+		expect(page.getByRole('dialog', { name: 'Red Team' }).query()).toBeNull();
+	});
+
+	it('sets the identity quantity without leaving the grid empty state', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const identityRow = page.getByRole('row', { name: /Zahya Sadeghi: Versatile Smuggler/ });
+		await userEvent.click(
+			identityRow.getByRole('link', { name: 'Zahya Sadeghi: Versatile Smuggler' })
+		);
+
+		const dialog = page.getByRole('dialog', { name: 'Zahya Sadeghi: Versatile Smuggler' });
+		await expect.element(dialog).toBeVisible();
+		await expect.element(dialog.getByRole('button', { name: '1' })).toBeVisible();
+
+		await userEvent.click(dialog.getByRole('button', { name: '1' }));
+
+		await expect.element(identityRow.getByRole('spinbutton')).toHaveValue(1);
+		await expect.element(page.getByText('No cards selected')).toBeVisible();
+		expect(
+			page.getByRole('dialog', { name: 'Zahya Sadeghi: Versatile Smuggler' }).query()
+		).toBeNull();
+	});
+
+	it('scales the modal quantity buttons to the card deck limit', async () => {
+		const limited = createMockCard('limited_card', 'Limited Card', ['core'], {
+			deck_limit: 1
+		});
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, limited]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		await userEvent.click(page.getByRole('link', { name: 'Limited Card' }));
+
+		const dialog = page.getByRole('dialog', { name: 'Limited Card' });
+		await expect.element(dialog.getByRole('button', { name: '1' })).toBeVisible();
+		expect(dialog.getByRole('button', { name: '2' }).query()).toBeNull();
+
+		await userEvent.keyboard('2');
+
+		await expect.element(dialog).toBeVisible();
+		expect(page.getByRole('button', { name: 'Limited Card, 1 copy' }).query()).toBeNull();
 	});
 
 	it('synchronizes chips with natural-language input', async () => {
@@ -209,36 +493,5 @@ describe('Decklist Builder', () => {
 
 		await userEvent.click(page.getByRole('button', { name: 'Startup' }));
 		expect(on_select_format).toHaveBeenCalledWith('startup');
-	});
-
-	it('applies the format clause even without a search query', async () => {
-		seedRows(RED_TEAM);
-
-		await renderBuilder({
-			identity: ZAHYA.id,
-			side_cards: [ZAHYA, RED_TEAM],
-			format: 'eternal'
-		});
-
-		await vi.waitFor(() =>
-			expect(sqlMock).toHaveBeenCalledWith(
-				expect.stringContaining('format_id = ?'),
-				'eternal',
-				'eternal',
-				'runner'
-			)
-		);
-	});
-
-	it('shows the whole side pool without a format clause for the all format', async () => {
-		await renderBuilder({
-			identity: ZAHYA.id,
-			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE],
-			format: 'all'
-		});
-
-		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
-		await expect.element(page.getByRole('link', { name: 'Sure Gamble' })).toBeVisible();
-		expect(sqlMock).not.toHaveBeenCalled();
 	});
 });

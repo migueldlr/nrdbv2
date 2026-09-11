@@ -1,40 +1,45 @@
 <script lang="ts">
 	import type { Card } from '$lib/types';
-	import type { CardSlots } from './grid';
 	import { card_types, factions as i18n_factions } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 	import Influence from '$lib/components/Influence.svelte';
 	import { tooltip } from '$lib/actions';
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import Button from '../ui/Button.svelte';
+	import type { CardSlots } from './card_slots';
 
 	interface Props {
 		readonly cards: readonly Card[];
 		readonly deck: CardSlots;
+		readonly on_open_card: (card: Card) => void;
+		readonly on_set_card_quantity: (card: Card, quantity: number) => void;
 	}
 
-	let { cards, deck = $bindable() }: Props = $props();
+	let { cards, deck, on_open_card, on_set_card_quantity }: Props = $props();
 
 	const get_quantity = (card: Card): number => deck[card.id] ?? 0;
 
-	const set_quantity = (card: Card, quantity: number) => {
-		const next = { ...deck };
-
-		if (quantity <= 0) {
-			delete next[card.id];
-		} else {
-			next[card.id] = Math.min(card.attributes.deck_limit, quantity);
+	const open_card_from_click = (event: MouseEvent, card: Card) => {
+		if (
+			event.button !== 0 ||
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey
+		) {
+			return;
 		}
 
-		deck = next;
+		event.preventDefault();
+		on_open_card(card);
 	};
 
 	const increment = (card: Card) => {
-		set_quantity(card, get_quantity(card) + 1);
+		on_set_card_quantity(card, get_quantity(card) + 1);
 	};
 
 	const decrement = (card: Card) => {
-		set_quantity(card, get_quantity(card) - 1);
+		on_set_card_quantity(card, get_quantity(card) - 1);
 	};
 </script>
 
@@ -61,7 +66,7 @@
 							max={result.attributes.deck_limit}
 							value={get_quantity(result)}
 							oninput={(event) =>
-								set_quantity(
+								on_set_card_quantity(
 									result,
 									Number.parseInt(
 										(event.currentTarget as HTMLInputElement).value,
@@ -73,7 +78,12 @@
 					</span>
 				</td>
 				<td>
-					<a href={localizeHref(`/card/${result.id}`)} use:tooltip={result}>
+					<a
+						href={localizeHref(`/card/${result.id}`)}
+						use:tooltip={result}
+						aria-haspopup="dialog"
+						onclick={(event) => open_card_from_click(event, result)}
+					>
 						{result.attributes.title}
 					</a>
 				</td>

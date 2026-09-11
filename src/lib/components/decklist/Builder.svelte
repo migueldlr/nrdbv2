@@ -10,23 +10,28 @@
 		collectActiveFilters,
 		toggleFilterInQuery
 	} from '$lib/search/interpret';
+	import { onDestroy } from 'svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { closeCardModal, openCardModal } from '$lib/store';
 	import Icon from '$lib/components/Icon.svelte';
 	import CardImage from '../card/CardImage.svelte';
 	import Button from '../ui/Button.svelte';
 	import ToggleGroup, { type ToggleOption } from '../ui/ToggleGroup.svelte';
 	import DeckBuilderSearchResults from './DeckBuilderSearchResults.svelte';
+	import CardQuantity from './CardQuantity.svelte';
 	import Grid from './Grid.svelte';
-	import type { CardSlots } from './grid';
+	import { buildDeckGridModel } from './grid';
+	import { setCardSlot, type CardSlots } from './card_slots';
 
 	interface Props {
 		identity: TCard['id'];
 		side_cards: TCard[];
 		format: DeckFormat;
 		on_select_format: (format: DeckFormat) => void;
+		on_select_identity: (identity: TCard['id']) => void;
 	}
 
-	let { identity, side_cards, format, on_select_format }: Props = $props();
+	let { identity, side_cards, format, on_select_format, on_select_identity }: Props = $props();
 
 	let search_query = $state('');
 	let active_tab = $state<'Build' | 'Notes' | 'Check' | 'History' | 'Collection' | 'Settings'>(
@@ -36,6 +41,24 @@
 	let notes_body = $state('');
 
 	let deck = $state<CardSlots>({});
+
+	let previous_identity: TCard['id'] | undefined;
+
+	$effect(() => {
+		const next_identity = identity;
+		const stale_identity = previous_identity;
+
+		previous_identity = next_identity;
+
+		if (stale_identity === undefined || stale_identity === next_identity) return;
+
+		const stale_quantity = deck[stale_identity];
+		if (stale_quantity === undefined) return;
+
+		const next_deck = { ...deck, [next_identity]: stale_quantity };
+		delete next_deck[stale_identity];
+		deck = next_deck;
+	});
 
 	let identity_card = $derived<TCard | undefined>(
 		side_cards.find((card: TCard) => card.id === identity)
@@ -74,22 +97,25 @@
 	let card_slots = $derived<CardSlots>(deck);
 
 	let has_cards = $derived(
-		grouped_cards.some((group) => group.data.some((card) => (card_slots[card.id] ?? 0) > 0))
+		buildDeckGridModel({ groups: grouped_cards, cardSlots: card_slots }).length > 0
 	);
 
-	let search_results = $state<TCard[]>([]);
+	let search_results = $state<{ query: string; cards: TCard[] }>({ query: '', cards: [] });
 
 	let search_request = 0;
 
+	const full_query = $derived(
+		[interpreted_query.expression, format_clause].filter(Boolean).join(' ')
+	);
+
 	$effect(() => {
-		const query = [interpreted_query.expression, format_clause].filter(Boolean).join(' ');
+		const request = ++search_request;
+		const query = full_query;
 
 		if (query.length === 0) {
-			search_results = side_cards;
+			search_results = { query: '', cards: side_cards };
 			return;
 		}
-
-		const request = ++search_request;
 
 		searchCards(query, {
 			constraint: {
@@ -98,7 +124,7 @@
 			}
 		}).then(({ cards, error }) => {
 			if (error === null && request === search_request) {
-				search_results = cards;
+				search_results = { query, cards };
 			}
 		});
 	});
@@ -116,7 +142,62 @@
 			id: card_type_id
 		});
 	};
+
+	const is_identity_card = (card: TCard): boolean =>
+		card.attributes.card_type_id === 'corp_identity' ||
+		card.attributes.card_type_id === 'runner_identity';
+
+	const set_card_quantity = (card: TCard, quantity: number) => {
+		const switches_identity = quantity > 0 && is_identity_card(card) && card.id !== identity;
+
+		if (switches_identity) on_select_identity(card.id);
+
+		const next_deck = { ...setCardSlot(deck, card, quantity) };
+		if (switches_identity) delete next_deck[identity];
+
+		deck = next_deck;
+		closeCardModal();
+	};
+
+	const on_card_key_down = (event: KeyboardEvent, card: TCard) => {
+		if (event.metaKey || event.ctrlKey || event.altKey) return;
+		if (!/^[0-9]$/.test(event.key)) return;
+
+		const quantity = Number(event.key);
+		if (quantity > card.attributes.deck_limit) return;
+
+		event.preventDefault();
+		set_card_quantity(card, quantity);
+	};
+
+	const open_card_modal = (card: TCard) =>
+		openCardModal(card, {
+			actions: card_actions,
+			onCardKeyDown: (event) => on_card_key_down(event, card)
+		});
+
+	onDestroy(closeCardModal);
+
+	const on_search_keydown = (event: KeyboardEvent) => {
+		if (event.key !== 'Enter') return;
+		if (event.isComposing) return;
+		if (search_results.query !== full_query) return;
+
+		const first = search_results.cards[0];
+		if (!first) return;
+
+		event.preventDefault();
+		open_card_modal(first);
+	};
 </script>
+
+{#snippet card_actions(card: TCard)}
+	<CardQuantity
+		{card}
+		quantity={deck[card.id] ?? 0}
+		onselect={(quantity) => set_card_quantity(card, quantity)}
+	/>
+{/snippet}
 
 <div class="builder">
 	<div class="builder__summary">
@@ -163,6 +244,7 @@
 				type="search"
 				placeholder="Find a card or filter the list"
 				bind:value={search_query}
+				onkeydown={on_search_keydown}
 			/>
 
 			<ToggleGroup
@@ -209,8 +291,13 @@
 				</section>
 			</div>
 
-			<DeckBuilderSearchResults cards={search_results} bind:deck />
-			{#if search_results.length === 0}
+			<DeckBuilderSearchResults
+				cards={search_results.cards}
+				deck={card_slots}
+				on_open_card={open_card_modal}
+				on_set_card_quantity={set_card_quantity}
+			/>
+			{#if search_results.cards.length === 0}
 				<p class="builder__empty">No cards found</p>
 			{/if}
 		{:else if active_tab === 'Notes'}

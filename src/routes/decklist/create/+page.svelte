@@ -60,6 +60,7 @@
 			side_cards={data.side_cards ?? []}
 			format={selected.format}
 			on_select_format={decklistNav.selectFormat}
+			on_select_identity={decklistNav.selectIdentity}
 		/>
 	{:else}
 		<IdentityPicker {catalog} {selected} />
