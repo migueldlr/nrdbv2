@@ -13,26 +13,35 @@
         inputElement?: HTMLInputElement | null;
     } = $props();
 
-    let caret = $state(0);
-    let collapsed = $state(true);
+    // These copy the input's DOM state and are refreshed in refreshInputState
+    // Caret position in the input
+    let caretPosition = $state(0);
+    // True when text is highlighted, which hides the ghost
+    let hasSelection = $state(false);
+    // Horizontal scroll offset of the input, used to shift the overlay in sync
     let scrollLeft = $state(0);
 
+    // Index where the word under the caret ends, or -1 when text is selected so no ghost shows
     const wordEnd = $derived(
-        collapsed ? getWordRangeAtCursor(value, caret).end : -1
+        hasSelection ? -1 : getWordRangeAtCursor(value, caretPosition).end
     );
 
+    // Invisible copy of the typed text, used only to position the grey suggestion
     const typed = $derived(value.slice(0, wordEnd));
+    // Completion suffix shown after the typed text, empty when the caret is not at the end
     const remainder = $derived(
-        wordEnd === value.length ? getGhostRemainder(value, caret) : ""
+        wordEnd === value.length ? getGhostRemainder(value, caretPosition) : ""
     );
 
-    function syncCaret() {
+    // Input events can move the caret, change the selection, or scroll, so re-read all three
+    function refreshInputState() {
         if (!inputElement) return;
-        caret = inputElement.selectionStart ?? 0;
-        collapsed = caret === (inputElement.selectionEnd ?? 0);
+        caretPosition = inputElement.selectionStart ?? 0;
+        hasSelection = caretPosition !== (inputElement.selectionEnd ?? 0);
         scrollLeft = inputElement.scrollLeft;
     }
 
+    // Tab accepts the suggestion by appending it and moving the caret to the end
     function handleKeydown(event: KeyboardEvent) {
         if (event.key !== "Tab" || event.shiftKey || !inputElement || !remainder) {
             return;
@@ -43,7 +52,7 @@
         inputElement.value = text;
         inputElement.setSelectionRange(text.length, text.length);
         value = text;
-        syncCaret();
+        refreshInputState();
     }
 </script>
 
@@ -58,19 +67,22 @@
         autocapitalize="off"
         spellcheck={false}
         placeholder="Search"
-        oninput={syncCaret}
+        oninput={refreshInputState}
         onkeydown={handleKeydown}
-        onkeyup={syncCaret}
-        onclick={syncCaret}
-        onselect={syncCaret}
-        onscroll={syncCaret}
+        onkeyup={refreshInputState}
+        onclick={refreshInputState}
+        onselect={refreshInputState}
+        onscroll={refreshInputState}
         onfocus={() => {
             onFocus?.();
-            syncCaret();
+            refreshInputState();
         }}
         onblur={(event) => onBlur?.(event)}
     />
     {#if remainder}
+        <!-- Example: typing "jin" with the suggestion "teki" draws an invisible
+             "jin" (same width as the real input text) then a grey "teki", so the
+             line reads "jinteki" -->
         <span
             class="ghost"
             aria-hidden="true"
