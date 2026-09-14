@@ -72,14 +72,4 @@
 			visibility: hidden;
 		}
 	}
-
-	@media (prefers-contrast: more) {
-		.influence__pips__filled {
-			color: inherit;
-		}
-
-		.influence__pips__empty {
-			opacity: 1;
-		}
-	}
 </style>
