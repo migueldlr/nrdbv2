@@ -177,8 +177,18 @@
 
 	onMount(() => {
 		window.addEventListener('scroll', hide_tooltip);
+
+		// dismiss tooltip with `Escape` key
+		const on_key_down = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && $tooltip.visible) {
+				hide_tooltip();
+			}
+		};
+		window.addEventListener('keydown', on_key_down);
+
 		return () => {
 			window.removeEventListener('scroll', hide_tooltip);
+			window.removeEventListener('keydown', on_key_down);
 		};
 	});
 </script>
@@ -192,8 +202,9 @@
 	data-visible={$tooltip.visible}
 	onmouseenter={handle_mouse_enter_tooltip}
 	onmouseleave={handle_mouse_leave_tooltip}
-	role="tooltip"
-	aria-roledescription="tooltip"
+	role="dialog"
+	aria-label="Card preview"
+	tabindex="-1"
 >
 	{#if $tooltip?.card}
 		<div class="tooltip__image">
