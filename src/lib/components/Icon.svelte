@@ -96,7 +96,8 @@
 {#snippet svg_path(value: string)}
 	<svg
 		class={`icon icon--${size} ${class_list}`}
-		aria-label={label}
+		role={label ? 'img' : undefined}
+		aria-label={label || undefined}
 		style={theme ? `color: var(--${theme})` : ''}
 	>
 		<use xlink:href="/icons.svg#{value}"></use>
