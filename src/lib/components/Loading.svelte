@@ -1,14 +1,13 @@
-<div class="loading"></div>
+<div class="loading" role="status" aria-label="Loading"></div>
 
 <style>
-	/* Temporary styles */
 	.loading {
 		animation: spin 800ms linear infinite;
 		height: 6rem;
 		width: 6rem;
 		border-radius: 100%;
-		border: 1rem solid rgba(255, 255, 255, 0.2);
-		border-top: 1rem solid #fff;
+		border: 1rem solid color-mix(in oklab, currentColor 20%, transparent);
+		border-top: 1rem solid currentColor;
 	}
 
 	@keyframes spin {
