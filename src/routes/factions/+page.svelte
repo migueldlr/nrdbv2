@@ -4,6 +4,7 @@
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import Container from '$lib/components/Container.svelte';
 	import Ghost from '$lib/components/Ghost.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	interface Props {
 		data: PageServerData & PageData;
@@ -11,6 +12,8 @@
 
 	let { data }: Props = $props();
 </script>
+
+<Meta title="Factions" />
 
 <Header title="Factions" />
 

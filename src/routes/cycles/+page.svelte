@@ -7,6 +7,7 @@
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import Container from '$lib/components/Container.svelte';
 	import type { Publishers } from '$lib/types';
+	import Meta from '$lib/components/Meta.svelte';
 
 	interface Props {
 		data: PageServerData & PageData;
@@ -14,6 +15,8 @@
 
 	let { data }: Props = $props();
 </script>
+
+<Meta title="Cycles" />
 
 <Header title="Cycles" />
 

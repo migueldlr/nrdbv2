@@ -4,6 +4,7 @@
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import Container from '$lib/components/Container.svelte';
 	import CardImage from '$lib/components/card/CardImage.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	interface Props {
 		data: PageServerData & PageData;
@@ -11,6 +12,8 @@
 
 	let { data }: Props = $props();
 </script>
+
+<Meta title="Illustrators" />
 
 <Header title="Illustrators" />
 

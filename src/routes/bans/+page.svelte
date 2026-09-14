@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Header from '$lib/components/Header.svelte';
 	import Container from '$lib/components/Container.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import type { Printing } from '$lib/types';
 	import type { ProcessedFormat, ProcessedRestriction, BanCardGroup } from './+page.server';
@@ -25,6 +26,8 @@
 		return localizeHref(`/card/${card.attributes.card_id}`);
 	}
 </script>
+
+<Meta title="Ban Lists" />
 
 formats.length: {formats.length}
 

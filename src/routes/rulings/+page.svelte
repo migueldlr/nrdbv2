@@ -5,9 +5,12 @@
 	import Container from '$lib/components/Container.svelte';
 	import RulingItem from '$lib/components/Ruling.svelte';
 	import Ghost from '$lib/components/Ghost.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data }: { data: { rulings: Ruling[] } } = $props();
 </script>
+
+<Meta title="Rulings" />
 
 <Header title="Rulings" />
 
