@@ -9,6 +9,7 @@
 	import { dev } from '$app/environment';
 	import Debug from '$lib/components/Debug.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import CardModalHost from '$lib/components/card/CardModalHost.svelte';
 	import {
 		sql,
 		overwriteDatabaseFile,
@@ -19,11 +20,7 @@
 	} from '$lib/sqlite';
 	import { fetch_published_databases } from '$lib/utils';
 	import { prepareSearch } from '$lib/search';
-	import {
-		CURRENT_SQLITE_URL_FILENAME,
-		NRDB_SQLITE_NAME,
-		NRDB_CACHE_COOKIE
-	} from '$lib/constants';
+	import { NRDB_SQLITE_NAME, NRDB_CACHE_COOKIE } from '$lib/constants';
 
 	interface Props {
 		children?: Snippet;
@@ -130,3 +127,5 @@
 <Footer />
 
 <Tooltip />
+
+<CardModalHost />
