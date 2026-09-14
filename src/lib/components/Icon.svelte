@@ -4,13 +4,13 @@
 	interface Props {
 		// TODO(types): refactor `string` to specific icon names later
 		name: FactionIds | CardTypeIds | string;
-		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'fill' | 'none';
+		size?: 'inline' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'fill' | 'none';
 		class?: string;
 		label?: string;
 		theme?: FactionIds;
 	}
 
-	let { name, size = 'lg', class: class_list = '', label = name, theme }: Props = $props();
+	let { name, size = 'md', class: class_list = '', label = name, theme }: Props = $props();
 
 	const icons: Record<Props['name'], string> = {
 		adam: 'faction-adam',
@@ -96,7 +96,8 @@
 {#snippet svg_path(value: string)}
 	<svg
 		class={`icon icon--${size} ${class_list}`}
-		aria-label={label}
+		role={label ? 'img' : undefined}
+		aria-label={label || undefined}
 		style={theme ? `color: var(--${theme})` : ''}
 	>
 		<use xlink:href="/icons.svg#{value}"></use>
@@ -114,6 +115,10 @@
 		fill: currentColor;
 		width: var(--icon-size);
 		height: var(--icon-size);
+	}
+
+	.icon--inline {
+		--icon-size: 1.5ch;
 	}
 
 	.icon--xs {
