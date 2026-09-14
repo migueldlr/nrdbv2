@@ -37,6 +37,7 @@
 		</div>
 		<div class="navigation__account">
 			<select
+				aria-label="Language"
 				onchange={(e: Event) =>
 					setLocale((e.target as HTMLSelectElement).value as (typeof locales)[number])}
 			>
@@ -46,6 +47,7 @@
 			</select>
 
 			<select
+				aria-label="Theme"
 				onchange={(e: Event) =>
 					set_theme((e.target as HTMLSelectElement).value as 'light' | 'dark')}
 			>
