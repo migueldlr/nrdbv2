@@ -1,5 +1,5 @@
 import {
-	type Intent,
+	type IntentMatch,
 	type SemanticIntent,
 	normalizeInput,
 	extractNumericIntents,
@@ -7,6 +7,7 @@ import {
 	assembleOutput
 } from './intents';
 import { RE_QUOTED_TERM } from './patterns';
+import type { CardTypeIds, FactionIds } from '$lib/types';
 
 export { NEUTRAL_FACTION_OR_QUERY } from './intents';
 
@@ -39,23 +40,144 @@ function extractQuotedTerms(input: string): { remainder: string; terms: Semantic
 	return { remainder, terms };
 }
 
-function runStages(input: string): { numericRaw: Intent[]; tokenRaw: Intent[] } {
+export type QueryFilter =
+	| { kind: 'faction'; id: FactionIds }
+	| { kind: 'cardType'; id: CardTypeIds };
+
+interface SourceRange {
+	start: number;
+	end: number;
+}
+
+interface QueryFilterOccurrence {
+	source: SourceRange;
+	filters: QueryFilter[];
+}
+
+export interface QueryInterpretation {
+	input: string;
+	expression: string;
+	occurrences: QueryFilterOccurrence[];
+}
+
+function toArray<T>(value: T | T[]): T[] {
+	return Array.isArray(value) ? value : [value];
+}
+
+function areFiltersEqual(left: QueryFilter, right: QueryFilter): boolean {
+	return left.kind === right.kind && left.id === right.id;
+}
+
+function deduplicateFilters(filters: QueryFilter[]): QueryFilter[] {
+	return filters.filter(
+		(filter, index) =>
+			filters.findIndex((candidate) => areFiltersEqual(candidate, filter)) === index
+	);
+}
+
+export function collectActiveFilters(interpretation: QueryInterpretation): QueryFilter[] {
+	return deduplicateFilters(interpretation.occurrences.flatMap(({ filters }) => filters));
+}
+
+// Escape regex metacharacters (e.g. `.`, `*`, `+`) so recognized phrases match literally
+function escapeRegex(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Find the next original source range for a phrase recognized from normalized input.
+function findPhraseRange(input: string, phrase: string, from: number): SourceRange | undefined {
+	const pattern = phrase.split(/\s+/).map(escapeRegex).join('\\s+');
+	const matches = new RegExp(`\\b${pattern}\\b`, 'gi');
+	matches.lastIndex = from;
+	for (let match = matches.exec(input); match; match = matches.exec(input)) {
+		return { start: match.index, end: match.index + match[0].length };
+	}
+	return undefined;
+}
+
+// Link each positive faction or card type intent to the text that produced it.
+function collectNaturalFilterOccurrences(
+	input: string,
+	matches: IntentMatch[]
+): QueryFilterOccurrence[] {
+	const occurrences: QueryFilterOccurrence[] = [];
+	let cursor = 0;
+
+	for (const match of matches) {
+		if (match.intent.kind !== 'faction' && match.intent.kind !== 'type') continue;
+		const source = findPhraseRange(input, match.phrase, cursor);
+		if (!source) continue;
+		cursor = source.end;
+		if (match.intent.negated) continue;
+
+		const filters: QueryFilter[] =
+			match.intent.kind === 'faction'
+				? toArray(match.intent.value).map((id) => ({ kind: 'faction', id }))
+				: toArray(match.intent.value).map((id) => ({ kind: 'cardType', id }));
+		occurrences.push({ source, filters });
+	}
+
+	return occurrences;
+}
+
+// Interpret the query and retain the source ranges needed to toggle its filters.
+export function interpretQuery(input: string): QueryInterpretation {
 	const { remainder, terms } = extractQuotedTerms(input);
 	const normalized = normalizeInput(remainder);
-	const { intents: numericRaw, remainder: afterNumeric } = extractNumericIntents(normalized);
-	// Restore each placeholder to its quoted-term intent, in place, so the or-grouping in
-	// assembleOutput sees the original token order.
-	const tokenRaw = recognizeIntents(afterNumeric).map((intent) => {
+	const { intents: numericIntents, remainder: afterNumeric } = extractNumericIntents(normalized);
+	const matches = recognizeIntents(afterNumeric).map((match) => {
+		const { intent } = match;
 		if (intent.kind === 'freeform') {
-			const m = RE_PLACEHOLDER.exec(intent.word);
-			if (m) return terms[Number(m[1])];
+			const placeholder = RE_PLACEHOLDER.exec(intent.word);
+			if (placeholder) return { ...match, intent: terms[Number(placeholder[1])] };
 		}
-		return intent;
+		return match;
 	});
-	return { numericRaw, tokenRaw };
+	const expression = assembleOutput([...numericIntents, ...matches.map(({ intent }) => intent)]);
+	const occurrences = collectNaturalFilterOccurrences(input, matches);
+	return {
+		input,
+		expression,
+		occurrences
+	};
 }
 
 export function interpretSearch(input: string): string {
-	const { numericRaw, tokenRaw } = runStages(input);
-	return assembleOutput([...numericRaw, ...tokenRaw]);
+	return interpretQuery(input).expression;
+}
+
+function formatFilterPhrase(filter: QueryFilter): string {
+	if (
+		filter.kind === 'faction' &&
+		(filter.id === 'neutral_corp' || filter.id === 'neutral_runner')
+	) {
+		return 'neutral';
+	}
+	return filter.id.replaceAll('_', ' ');
+}
+
+function normalizeQueryAfterFilterRemoval(input: string): string {
+	return input.replace(/\s+/g, ' ').trim();
+}
+
+// Remove every occurrence of an active filter, or append an inactive filter as plain text.
+export function toggleFilterInQuery(
+	interpretation: QueryInterpretation,
+	filter: QueryFilter
+): string {
+	const occurrences = interpretation.occurrences.filter((occurrence) =>
+		occurrence.filters.some((active) => areFiltersEqual(active, filter))
+	);
+	if (occurrences.length === 0) {
+		return [interpretation.input.trim(), formatFilterPhrase(filter)].filter(Boolean).join(' ');
+	}
+
+	const sources = occurrences
+		.map(({ source }) => source)
+		.sort((left, right) => right.start - left.start);
+	const edited = sources.reduce(
+		(query, source) => `${query.slice(0, source.start)}${query.slice(source.end)}`,
+		interpretation.input
+	);
+	return normalizeQueryAfterFilterRemoval(edited);
 }

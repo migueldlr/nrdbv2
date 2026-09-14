@@ -31,3 +31,5 @@ storybook-static
 # Ignore output files for the local vs. api search tests.
 scripts/api-req-cache/*.json.txt
 scripts/search-comparison-results.json
+
+project.inlang/cache/

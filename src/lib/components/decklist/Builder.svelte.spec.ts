@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CARNIVORE, RED_TEAM, SURE_GAMBLE } from '$lib/cards.fixture';
 import { ESA, ZAHYA } from '$lib/identities.fixture';
+import type { DeckFormat } from '$lib/deck_formats';
 import type { Card } from '$lib/types';
 import Builder from './Builder.svelte';
 
@@ -25,6 +26,19 @@ function seedRows(...cards: Card[]) {
 	sqlMock.mockResolvedValue(cards.map((card) => ({ id: card.id })));
 }
 
+function renderBuilder(props: {
+	identity: string;
+	side_cards: Card[];
+	format?: DeckFormat;
+	on_select_format?: (format: DeckFormat) => void;
+}) {
+	return render(Builder, {
+		format: 'all',
+		on_select_format: () => {},
+		...props
+	});
+}
+
 describe('Decklist Builder', () => {
 	const redTeamRow = page.getByRole('row', { name: /Red Team/ });
 
@@ -42,7 +56,7 @@ describe('Decklist Builder', () => {
 	it('reflects quantity controls in the grid and restores the empty state on removal', async () => {
 		seedRows(RED_TEAM);
 
-		await render(Builder, {
+		await renderBuilder({
 			identity: ZAHYA.id,
 			side_cards: [ZAHYA, RED_TEAM]
 		});
@@ -70,7 +84,7 @@ describe('Decklist Builder', () => {
 	it('keeps the deck when the identity changes', async () => {
 		seedRows(RED_TEAM, CARNIVORE);
 
-		const { rerender } = await render(Builder, {
+		const { rerender } = await renderBuilder({
 			identity: ZAHYA.id,
 			side_cards: [ZAHYA, ESA, RED_TEAM, CARNIVORE]
 		});
@@ -88,7 +102,7 @@ describe('Decklist Builder', () => {
 	it('shows the full card pool for a blank query and searches with the full grammar', async () => {
 		seedRows(RED_TEAM);
 
-		await render(Builder, {
+		await renderBuilder({
 			identity: ZAHYA.id,
 			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
 		});
@@ -117,5 +131,114 @@ describe('Decklist Builder', () => {
 
 		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
 		expect(page.getByRole('link', { name: 'Sure Gamble' }).query()).toBeNull();
+	});
+
+	it('synchronizes chips with natural-language input', async () => {
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, SURE_GAMBLE]
+		});
+
+		const search = page.getByRole('searchbox');
+		const criminal = page.getByRole('button', { name: 'Criminal' });
+		const neutral = page.getByRole('button', { name: 'Neutral' });
+
+		await expect
+			.element(page.getByRole('button', { name: 'Criminal', pressed: false }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Event', pressed: false }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: false }))
+			.toBeVisible();
+
+		await userEvent.type(search, 'criminal events');
+		await expect
+			.element(page.getByRole('button', { name: 'Criminal', pressed: true }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Event', pressed: true }))
+			.toBeVisible();
+
+		await userEvent.click(criminal);
+		await expect.element(search).toHaveValue('events');
+		await expect
+			.element(page.getByRole('button', { name: 'Criminal', pressed: false }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Event', pressed: true }))
+			.toBeVisible();
+
+		await userEvent.fill(search, 'neutral');
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: true }))
+			.toBeVisible();
+		await userEvent.click(neutral);
+		await expect.element(search).toHaveValue('');
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: false }))
+			.toBeVisible();
+		await userEvent.click(neutral);
+		await expect.element(search).toHaveValue('neutral');
+		await expect
+			.element(page.getByRole('button', { name: 'Neutral', pressed: true }))
+			.toBeVisible();
+	});
+
+	it('filters the card pool by the selected format', async () => {
+		seedRows(RED_TEAM);
+
+		const on_select_format = vi.fn();
+
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE],
+			format: 'standard',
+			on_select_format
+		});
+
+		await vi.waitFor(() =>
+			expect(sqlMock).toHaveBeenCalledWith(
+				expect.stringContaining('format_id = ?'),
+				'standard',
+				'standard',
+				'runner'
+			)
+		);
+
+		await userEvent.click(page.getByRole('button', { name: 'Startup' }));
+		expect(on_select_format).toHaveBeenCalledWith('startup');
+	});
+
+	it('applies the format clause even without a search query', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM],
+			format: 'eternal'
+		});
+
+		await vi.waitFor(() =>
+			expect(sqlMock).toHaveBeenCalledWith(
+				expect.stringContaining('format_id = ?'),
+				'eternal',
+				'eternal',
+				'runner'
+			)
+		);
+	});
+
+	it('shows the whole side pool without a format clause for the all format', async () => {
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE],
+			format: 'all'
+		});
+
+		await expect.element(page.getByRole('link', { name: 'Red Team' })).toBeVisible();
+		await expect.element(page.getByRole('link', { name: 'Sure Gamble' })).toBeVisible();
+		expect(sqlMock).not.toHaveBeenCalled();
 	});
 });
