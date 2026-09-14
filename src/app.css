@@ -273,6 +273,24 @@
 	.root:has(header[data-id='page-header'] + article) > article {
 		margin-block: 3rem;
 	}
+
+	.skip-link {
+		position: absolute;
+		inset-block-start: 0.5rem;
+		inset-inline-start: 0.5rem;
+		z-index: 100;
+		padding: 0.5rem 1rem;
+		background: var(--foreground);
+		color: var(--text);
+		border: 1px solid var(--border);
+		border-radius: 0.25rem;
+		text-decoration: none;
+		transform: translateY(-200%);
+	}
+
+	.skip-link:focus-visible {
+		transform: none;
+	}
 }
 
 @layer utilities {

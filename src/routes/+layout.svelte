@@ -117,11 +117,13 @@
 	<Debug />
 {/if}
 
+<a class="skip-link" href="#main">Skip to content</a>
+
 <Navigation />
 
 <Meta />
 
-<main class="root">
+<main class="root" id="main" tabindex="-1">
 	{@render children?.()}
 </main>
 
