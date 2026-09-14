@@ -1,10 +1,70 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { interpretSearch } from './interpret';
+import {
+	collectActiveFilters,
+	interpretQuery,
+	interpretSearch,
+	toggleFilterInQuery
+} from './interpret';
 import { translateToQuery } from './translate';
 import { populateSubtypeMap } from './vocabulary';
 import { SUBTYPE_FIXTURE } from './subtypes.fixture';
 
 beforeAll(() => populateSubtypeMap(SUBTYPE_FIXTURE));
+
+describe('natural-language filter synchronization', () => {
+	it('derives positive filters from natural language', () => {
+		const interpretation = interpretQuery('hb ice');
+		expect(interpretation.expression).toBe('f:haas_bioroid t:ice');
+		expect(collectActiveFilters(interpretation)).toEqual([
+			{ kind: 'faction', id: 'haas_bioroid' },
+			{ kind: 'cardType', id: 'ice' }
+		]);
+	});
+
+	it('does not treat explicit syntax as a natural filter occurrence', () => {
+		expect(collectActiveFilters(interpretQuery('f:anarch t:ice'))).toEqual([]);
+	});
+
+	it('adds and removes filters without canonicalizing the visible query', () => {
+		const withoutFaction = toggleFilterInQuery(interpretQuery('hb ice'), {
+			kind: 'faction',
+			id: 'haas_bioroid'
+		});
+		expect(withoutFaction).toBe('ice');
+
+		expect(
+			toggleFilterInQuery(interpretQuery(withoutFaction), {
+				kind: 'faction',
+				id: 'anarch'
+			})
+		).toBe('ice anarch');
+	});
+
+	it('removes a shared neutral occurrence as one unit', () => {
+		expect(
+			toggleFilterInQuery(interpretQuery('neutral'), {
+				kind: 'faction',
+				id: 'neutral_runner'
+			})
+		).toBe('');
+
+		const added = toggleFilterInQuery(interpretQuery(''), {
+			kind: 'faction',
+			id: 'neutral_runner'
+		});
+		expect(added).toBe('neutral');
+		expect(interpretSearch(added)).toBe('(f:neutral_corp or f:neutral_runner)');
+	});
+
+	it('preserves numeric wording', () => {
+		expect(
+			toggleFilterInQuery(interpretQuery('cost greater than 3 criminal events'), {
+				kind: 'faction',
+				id: 'criminal'
+			})
+		).toBe('cost greater than 3 events');
+	});
+});
 
 // Pins the interpreted output (snapshot) AND proves that output is valid input for
 // the query builder, not just an unchanged string. translateToQuery feeds the expression

@@ -1,11 +1,20 @@
 <script lang="ts">
 	import type { SidesIds, FactionIds, CardTypeIds, Card as TCard, CardGroup } from '$lib/types';
-	import { card_types, factions as i18n_factions } from '$lib/i18n';
+	import { card_types, formats as i18n_formats, factions as i18n_factions } from '$lib/i18n';
 	import { CORP_CARD_TYPES, RUNNER_CARD_TYPES } from '$lib/constants';
+	import { DECK_FORMATS, type DeckFormat } from '$lib/deck_formats';
 	import { group_cards_by_type } from '$lib/utils';
+	import { searchCards } from '$lib/search';
+	import {
+		interpretQuery,
+		collectActiveFilters,
+		toggleFilterInQuery
+	} from '$lib/search/interpret';
+	import { m } from '$lib/paraglide/messages.js';
 	import Icon from '$lib/components/Icon.svelte';
 	import CardImage from '../card/CardImage.svelte';
 	import Button from '../ui/Button.svelte';
+	import ToggleGroup, { type ToggleOption } from '../ui/ToggleGroup.svelte';
 	import DeckBuilderSearchResults from './DeckBuilderSearchResults.svelte';
 	import Grid from './Grid.svelte';
 	import type { CardSlots } from './grid';
@@ -13,9 +22,11 @@
 	interface Props {
 		identity: TCard['id'];
 		side_cards: TCard[];
+		format: DeckFormat;
+		on_select_format: (format: DeckFormat) => void;
 	}
 
-	let { identity, side_cards }: Props = $props();
+	let { identity, side_cards, format, on_select_format }: Props = $props();
 
 	let search_query = $state('');
 	let active_tab = $state<'Build' | 'Notes' | 'Check' | 'History' | 'Collection' | 'Settings'>(
@@ -32,9 +43,14 @@
 
 	let side = $derived<SidesIds>(identity_card?.attributes.side_id ?? 'corp');
 
-	let faction_filters = $state<FactionIds[]>([]);
-
-	let type_filters = $state<CardTypeIds[]>([]);
+	let interpreted_query = $derived(interpretQuery(search_query));
+	let active_filters = $derived(collectActiveFilters(interpreted_query));
+	let faction_filters = $derived(
+		active_filters.flatMap((filter) => (filter.kind === 'faction' ? [filter.id] : []))
+	);
+	let type_filters = $derived(
+		active_filters.flatMap((filter) => (filter.kind === 'cardType' ? [filter.id] : []))
+	);
 
 	let faction_options = $derived<FactionIds[]>(
 		[...new Set(side_cards.map((card) => card.attributes.faction_id))].sort((a, b) =>
@@ -46,6 +62,13 @@
 		side === 'corp' ? CORP_CARD_TYPES : RUNNER_CARD_TYPES
 	);
 
+	const format_toggles: ToggleOption<DeckFormat>[] = DECK_FORMATS.map((format_option) => ({
+		value: format_option,
+		label: i18n_formats[format_option]
+	}));
+
+	const format_clause = $derived(format === 'all' ? '' : `format:${format}`);
+
 	let grouped_cards = $derived<CardGroup[]>(group_cards_by_type(side_cards));
 
 	let card_slots = $derived<CardSlots>(deck);
@@ -54,37 +77,44 @@
 		grouped_cards.some((group) => group.data.some((card) => (card_slots[card.id] ?? 0) > 0))
 	);
 
-	let search_results = $derived.by<TCard[]>(() => {
-		const query = search_query.trim();
+	let search_results = $state<TCard[]>([]);
 
-		return side_cards.filter((card: TCard) => {
-			const title_match =
-				query.length === 0 ||
-				card.attributes.title.toLowerCase().includes(query.toLowerCase()) ||
-				card.id.toLowerCase().includes(query.toLowerCase());
+	let search_request = 0;
 
-			const faction_match =
-				faction_filters.length === 0 ||
-				faction_filters.includes(card.attributes.faction_id);
+	$effect(() => {
+		const query = [interpreted_query.expression, format_clause].filter(Boolean).join(' ');
 
-			const type_match =
-				type_filters.length === 0 || type_filters.includes(card.attributes.card_type_id);
+		if (query.length === 0) {
+			search_results = side_cards;
+			return;
+		}
 
-			return title_match && faction_match && type_match;
+		const request = ++search_request;
+
+		searchCards(query, {
+			constraint: {
+				clause: 'unified_cards.side_id = ?',
+				params: [side]
+			}
+		}).then(({ cards, error }) => {
+			if (error === null && request === search_request) {
+				search_results = cards;
+			}
 		});
 	});
 
-	const toggle = <T>(values: T[], value: T): T[] =>
-		values.includes(value)
-			? values.filter((existing) => existing !== value)
-			: [...values, value];
-
 	const on_toggle_faction_change = (faction_id: FactionIds) => {
-		faction_filters = toggle(faction_filters, faction_id);
+		search_query = toggleFilterInQuery(interpreted_query, {
+			kind: 'faction',
+			id: faction_id
+		});
 	};
 
 	const on_toggle_type_change = (card_type_id: CardTypeIds) => {
-		type_filters = toggle(type_filters, card_type_id);
+		search_query = toggleFilterInQuery(interpreted_query, {
+			kind: 'cardType',
+			id: card_type_id
+		});
 	};
 </script>
 
@@ -135,6 +165,14 @@
 				bind:value={search_query}
 			/>
 
+			<ToggleGroup
+				options={format_toggles}
+				label={m.format()}
+				size="sm"
+				selected={format}
+				onselect={on_select_format}
+			/>
+
 			<div class="builder__filters">
 				<section>
 					<h3>Filter by faction</h3>
@@ -144,9 +182,10 @@
 								color={faction_filters.includes(faction_option)
 									? 'primary'
 									: 'ghost'}
+								aria-pressed={faction_filters.includes(faction_option)}
 								onclick={() => on_toggle_faction_change(faction_option)}
 							>
-								<Icon name={faction_option} size="inline" />
+								<Icon name={faction_option} size="sm" />
 								{i18n_factions[faction_option]}
 							</Button>
 						{/each}
@@ -159,9 +198,10 @@
 						{#each type_options as type (type)}
 							<Button
 								color={type_filters.includes(type) ? 'primary' : 'ghost'}
+								aria-pressed={type_filters.includes(type)}
 								onclick={() => on_toggle_type_change(type)}
 							>
-								<Icon name={type} size="inline" />
+								<Icon name={type} size="sm" />
 								{card_types[type]}
 							</Button>
 						{/each}
