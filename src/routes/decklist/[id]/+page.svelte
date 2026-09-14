@@ -193,9 +193,9 @@
 					<div class="group">
 						<div class="icon-text">
 							<Icon name={group.type} />
-							<h4>
+							<h3>
 								{card_types[group.type]} ({count[group.type]})
-							</h4>
+							</h3>
 						</div>
 						<Table decklist={data.decklist} cards={group.data} />
 					</div>
