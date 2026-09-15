@@ -37,9 +37,19 @@ export const theme = writable<'light' | 'dark' | null>(null);
 export const db_ready = writable<boolean>(false);
 
 // The card shown in the global card modal, or null when closed
-export const cardModal = writable<{ card: Card; actions?: Snippet<[Card]> } | null>(null);
+export const cardModal = writable<{
+	card: Card;
+	actions?: Snippet<[Card]>;
+	onKeyDown?: (event: KeyboardEvent) => void;
+} | null>(null);
 
-export function openCardModal(card: Card, options: { actions?: Snippet<[Card]> } = {}) {
+export function openCardModal(
+	card: Card,
+	options: {
+		actions?: Snippet<[Card]>;
+		onKeyDown?: (event: KeyboardEvent) => void;
+	} = {}
+) {
 	cardModal.set({ card, ...options });
 }
 
