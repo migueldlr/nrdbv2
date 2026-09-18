@@ -67,7 +67,6 @@
 	// Arrow key navigation for `as_tabs` mode
 	const on_tab_keydown = (event: KeyboardEvent) => {
 		if (!as_tabs) return;
-		event.preventDefault();
 
 		const values = options.map((entry) => entry.value);
 		const current = props.multiple ? (props.selection[0] ?? null) : props.selected;
@@ -85,6 +84,7 @@
 				return;
 		}
 
+		event.preventDefault();
 		activate(values[next]);
 		group_element?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
 	};
