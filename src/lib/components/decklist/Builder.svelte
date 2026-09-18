@@ -89,19 +89,22 @@
 		grouped_cards.some((group) => group.data.some((card) => (card_slots[card.id] ?? 0) > 0))
 	);
 
-	let search_results = $state<TCard[]>([]);
+	let search_results = $state<{ query: string; cards: TCard[] }>({ query: '', cards: [] });
 
 	let search_request = 0;
 
+	const full_query = $derived(
+		[interpreted_query.expression, format_clause].filter(Boolean).join(' ')
+	);
+
 	$effect(() => {
-		const query = [interpreted_query.expression, format_clause].filter(Boolean).join(' ');
+		const request = ++search_request;
+		const query = full_query;
 
 		if (query.length === 0) {
-			search_results = side_cards;
+			search_results = { query: '', cards: side_cards };
 			return;
 		}
-
-		const request = ++search_request;
 
 		searchCards(query, {
 			constraint: {
@@ -110,7 +113,7 @@
 			}
 		}).then(({ cards, error }) => {
 			if (error === null && request === search_request) {
-				search_results = cards;
+				search_results = { query, cards };
 			}
 		});
 	});
@@ -128,12 +131,38 @@
 
 	const set_card_quantity = (card: TCard, quantity: number) => {
 		deck = setCardSlot(deck, card, quantity);
+		search_query = '';
 		closeCardModal();
 	};
 
-	const open_card_modal = (card: TCard) => openCardModal(card, { actions: card_actions });
+	const on_card_key_down = (event: KeyboardEvent, card: TCard) => {
+		if (event.metaKey || event.ctrlKey || event.altKey) return;
+		if (!/^[0-9]$/.test(event.key)) return;
+
+		const quantity = Number(event.key);
+		if (quantity > card.attributes.deck_limit) return;
+
+		event.preventDefault();
+		set_card_quantity(card, quantity);
+	};
+
+	const open_card_modal = (card: TCard) =>
+		openCardModal(card, {
+			actions: card_actions,
+			onKeyDown: (event) => on_card_key_down(event, card)
+		});
 
 	onDestroy(closeCardModal);
+
+	const on_search_submit = (event: SubmitEvent) => {
+		event.preventDefault();
+		if (search_results.query !== full_query) return;
+
+		const first = search_results.cards[0];
+		if (!first) return;
+
+		open_card_modal(first);
+	};
 </script>
 
 {#snippet card_actions(card: TCard)}
@@ -182,14 +211,16 @@
 		</div>
 
 		{#if active_tab === 'Build'}
-			<label class="builder__label" for="deck-search">Find cards</label>
-			<input
-				id="deck-search"
-				class="builder__input"
-				type="search"
-				placeholder="Find a card or filter the list"
-				bind:value={search_query}
-			/>
+			<form class="builder__search-form" onsubmit={on_search_submit}>
+				<label class="builder__label" for="deck-search">Find cards</label>
+				<input
+					id="deck-search"
+					class="builder__input"
+					type="search"
+					placeholder="Find a card or filter the list"
+					bind:value={search_query}
+				/>
+			</form>
 
 			<ToggleGroup
 				options={format_toggles}
@@ -230,11 +261,11 @@
 			</div>
 
 			<DeckBuilderSearchResults
-				cards={search_results}
+				cards={search_results.cards}
 				bind:deck
 				on_open_card={open_card_modal}
 			/>
-			{#if search_results.length === 0}
+			{#if search_results.cards.length === 0}
 				<p class="builder__empty">No cards found</p>
 			{/if}
 		{:else if active_tab === 'Notes'}
@@ -279,6 +310,11 @@
 
 	.builder__empty {
 		color: var(--text-muted);
+	}
+
+	.builder__search-form {
+		display: grid;
+		gap: 1rem;
 	}
 
 	.builder__label {

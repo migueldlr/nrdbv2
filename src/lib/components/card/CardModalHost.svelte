@@ -7,6 +7,14 @@
 		const current_url = page.url.href;
 		return () => closeCardModal();
 	});
+
+	$effect(() => {
+		const on_key_down = $cardModal?.onKeyDown;
+		if (!on_key_down) return;
+
+		window.addEventListener('keydown', on_key_down);
+		return () => window.removeEventListener('keydown', on_key_down);
+	});
 </script>
 
 {#if $cardModal}

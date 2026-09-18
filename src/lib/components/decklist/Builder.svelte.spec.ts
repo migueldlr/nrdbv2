@@ -176,6 +176,146 @@ describe('Decklist Builder', () => {
 		expect(page.getByRole('dialog', { name: 'Red Team' }).query()).toBeNull();
 	});
 
+	it('opens the first search result when Enter is pressed in the search box', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		await expect.element(page.getByRole('button', { name: 'Red Team' })).toBeVisible();
+
+		await userEvent.keyboard('{Enter}');
+
+		await expect.element(page.getByRole('dialog', { name: 'Red Team' })).toBeVisible();
+	});
+
+	it('does not open a stale first result while a newer query is pending', async () => {
+		seedRows(RED_TEAM, SURE_GAMBLE);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		await expect.element(page.getByRole('button', { name: 'Red Team' })).toBeVisible();
+
+		let resolve_pending!: (rows: { id: string }[]) => void;
+		const pending = new Promise<{ id: string }[]>((resolve) => {
+			resolve_pending = resolve;
+		});
+		sqlMock.mockImplementation(() => pending);
+
+		await userEvent.fill(search, 'gamble');
+		await expect.element(page.getByRole('button', { name: 'Red Team' })).toBeVisible();
+
+		await userEvent.keyboard('{Enter}');
+		expect(page.getByRole('dialog', { name: 'Red Team' }).query()).toBeNull();
+
+		resolve_pending([{ id: SURE_GAMBLE.id }]);
+		await expect.element(page.getByRole('button', { name: 'Sure Gamble' })).toBeVisible();
+
+		await userEvent.keyboard('{Enter}');
+		await expect.element(page.getByRole('dialog', { name: 'Sure Gamble' })).toBeVisible();
+	});
+
+	it('keeps the side pool when a cleared query leaves a stale response pending', async () => {
+		seedRows(RED_TEAM, SURE_GAMBLE);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		await expect.element(page.getByRole('button', { name: 'Red Team' })).toBeVisible();
+
+		let resolve_pending!: (rows: { id: string }[]) => void;
+		const pending = new Promise<{ id: string }[]>((resolve) => {
+			resolve_pending = resolve;
+		});
+		sqlMock.mockImplementation(() => pending);
+
+		await userEvent.fill(search, 'gamble');
+		await userEvent.fill(search, '');
+		await expect
+			.element(page.getByRole('row', { name: /Zahya Sadeghi: Versatile Smuggler/ }))
+			.toBeVisible();
+
+		resolve_pending([{ id: SURE_GAMBLE.id }]);
+
+		await userEvent.keyboard('{Enter}');
+		await expect
+			.element(page.getByRole('dialog', { name: 'Zahya Sadeghi: Versatile Smuggler' }))
+			.toBeVisible();
+		expect(page.getByRole('dialog', { name: 'Sure Gamble' }).query()).toBeNull();
+	});
+
+	it('sets the quantity from a number key and closes the modal', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		await userEvent.click(page.getByRole('button', { name: 'Red Team' }));
+		await expect.element(page.getByRole('dialog', { name: 'Red Team' })).toBeVisible();
+
+		await userEvent.keyboard('2');
+
+		await expect
+			.element(page.getByRole('button', { name: 'Red Team, 2 copies' }))
+			.toBeVisible();
+		expect(page.getByRole('dialog', { name: 'Red Team' }).query()).toBeNull();
+	});
+
+	it('clears the search query when a card is selected from the modal', async () => {
+		seedRows(RED_TEAM);
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		const search = page.getByRole('searchbox');
+		await userEvent.type(search, 'red');
+		expect(page.getByRole('button', { name: 'Sure Gamble' }).query()).toBeNull();
+
+		await userEvent.click(page.getByRole('button', { name: 'Red Team' }));
+
+		const dialog = page.getByRole('dialog', { name: 'Red Team' });
+		await expect.element(dialog).toBeVisible();
+		await userEvent.click(dialog.getByRole('button', { name: '2' }));
+
+		await expect.element(search).toHaveValue('');
+		await expect.element(page.getByRole('button', { name: 'Sure Gamble' })).toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Red Team, 2 copies' }))
+			.toBeVisible();
+	});
+
 	it('scales the modal quantity buttons to the card deck limit', async () => {
 		const limited = createMockCard('limited_card', 'Limited Card', ['core'], {
 			deck_limit: 1
@@ -194,6 +334,11 @@ describe('Decklist Builder', () => {
 		const dialog = page.getByRole('dialog', { name: 'Limited Card' });
 		await expect.element(dialog.getByRole('button', { name: '1' })).toBeVisible();
 		expect(dialog.getByRole('button', { name: '2' }).query()).toBeNull();
+
+		await userEvent.keyboard('2');
+
+		await expect.element(dialog).toBeVisible();
+		expect(page.getByRole('button', { name: 'Limited Card, 1 copy' }).query()).toBeNull();
 	});
 
 	it('synchronizes chips with natural-language input', async () => {
