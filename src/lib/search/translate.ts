@@ -49,9 +49,7 @@ export function translateToQuery(
 
 	const where =
 		clauses.length > 1 ? clauses.map((clause) => `(${clause})`).join(' AND ') : clauses[0];
-	const joins = builder?.left_joins.join(' ') ?? '';
-	const from = joins ? `unified_cards ${joins}` : 'unified_cards';
-	let text = `SELECT * FROM ${from} WHERE ${where} ORDER BY title ASC`;
+	let text = `SELECT * FROM unified_cards WHERE ${where} ORDER BY title ASC`;
 
 	if (limit !== undefined) {
 		text += ' LIMIT ?';

@@ -108,34 +108,29 @@ export interface FieldData {
 	type: 'array' | 'boolean' | 'date' | 'format' | 'integer' | 'string';
 	sql: string;
 	keywords: string[];
-	documentation: string;
 }
 
 export interface FullFieldData {
 	type: 'array' | 'boolean' | 'date' | 'format' | 'integer' | 'string';
 	sql: { c?: string; p?: string };
 	keywords: string[];
-	documentation: string;
 }
 
 export const fullFields: FullFieldData[] = [
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.card_cycle_ids' },
-		keywords: ['card_cycle', 'c'],
-		documentation: '`card_cycle_id`s for printings of a card.'
+		keywords: ['card_cycle', 'c']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.card_pool_ids', p: 'unified_printings.card_pool_ids' },
-		keywords: ['card_pool', 'z'],
-		documentation: '`card_pool_id`s for a card pool containing a card.'
+		keywords: ['card_pool', 'z']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.card_set_ids' },
-		keywords: ['card_set', 'e'],
-		documentation: '`card_set_id` for a card, pulled in via printing.'
+		keywords: ['card_set', 'e']
 	},
 	{
 		type: 'array',
@@ -143,27 +138,22 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.lower_card_subtype_names',
 			p: 'unified_printings.lower_card_subtype_names'
 		},
-		keywords: ['card_subtype', 's'],
-		documentation: 'text names for card subtypes, matched as lowercase.'
+		keywords: ['card_subtype', 's']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.card_subtype_ids', p: 'unified_printings.card_subtype_ids' },
-		keywords: ['card_subtype_id'],
-		documentation: '`card_subtype_id`s for the card.'
+		keywords: ['card_subtype_id']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.restrictions_points', p: 'unified_printings.restrictions_points' },
-		keywords: ['eternal_points'],
-		documentation:
-			'Concatenation of `restriction_id` and an Eternal Points value, joined by a hyphen, like `eternal_points:eternal_points_list_22_09-2`.'
+		keywords: ['eternal_points']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.format_ids', p: 'unified_printings.format_ids' },
-		keywords: ['format_id'],
-		documentation: '`format_id` for any format containing the card at any time.'
+		keywords: ['format_id']
 	},
 	{
 		type: 'array',
@@ -171,22 +161,17 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.restrictions_global_penalty',
 			p: 'unified_printings.restrictions_global_penalty'
 		},
-		keywords: ['has_global_penalty'],
-		documentation:
-			'`restriction_id` restricting the card with a global penalty, like `has_global_penalty:napd_mwl_1_1`.'
+		keywords: ['has_global_penalty']
 	},
 	{
 		type: 'array',
 		sql: { p: 'unified_printings.illustrator_ids' },
-		keywords: ['illustrator_id'],
-		documentation: '`illustrator_id` for an illustrator for the printing.'
+		keywords: ['illustrator_id']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.restrictions_banned', p: 'unified_printings.restrictions_banned' },
-		keywords: ['is_banned'],
-		documentation:
-			'`restriction_id` specifying the card as banned, like `is_banned:standard_ban_list_22_08`.'
+		keywords: ['is_banned']
 	},
 	{
 		type: 'array',
@@ -194,15 +179,12 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.restrictions_restricted',
 			p: 'unified_printings.restrictions_restricted'
 		},
-		keywords: ['is_restricted'],
-		documentation:
-			'`restriction_id` specifying the card as banned, like `is_restricted:standard_mwl_3_4_b`.'
+		keywords: ['is_restricted']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.printing_ids' },
-		keywords: ['printing_id'],
-		documentation: '`printing_id` for any printing of this card.'
+		keywords: ['printing_id']
 	},
 	{
 		type: 'array',
@@ -210,21 +192,17 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.printings_released_by',
 			p: 'unified_printings.printings_released_by'
 		},
-		keywords: ['printings_released_by'],
-		documentation: 'All organizations that have released printings for a card.'
+		keywords: ['printings_released_by']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.restriction_ids', p: 'unified_printings.restriction_ids' },
-		keywords: ['restriction_id', 'b'],
-		documentation:
-			'`restriction_id` specifying the card for any reason, like: `restriction_id:eternal_points_list_22_09`'
+		keywords: ['restriction_id', 'b']
 	},
 	{
 		type: 'array',
 		sql: { c: 'unified_cards.snapshot_ids', p: 'unified_printings.snapshot_ids' },
-		keywords: ['snapshot'],
-		documentation: '`snapshot_id` of a snapshot containing a card.'
+		keywords: ['snapshot']
 	},
 	{
 		type: 'array',
@@ -232,137 +210,112 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.restrictions_universal_faction_cost',
 			p: 'unified_printings.restrictions_universal_faction_cost'
 		},
-		keywords: ['universal_faction_cost'],
-		documentation:
-			'Concatenation of `restriction_id` and a Universal Faction Cost value, joined by a hyphen, like `universal_faction_cost:napd_mwl_1_2-3`.'
+		keywords: ['universal_faction_cost']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.additional_cost', p: 'unified_printings.additional_cost' },
-		keywords: ['additional_cost'],
-		documentation: 'Does the card text specify an additional cost to play?'
+		keywords: ['additional_cost']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.advanceable', p: 'unified_printings.advanceable' },
-		keywords: ['advanceable'],
-		documentation: 'Is the card advanceable?'
+		keywords: ['advanceable']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.charge', p: 'unified_printings.charge' },
-		keywords: ['charge'],
-		documentation: 'Does the card have a charge ability?'
+		keywords: ['charge']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.gains_subroutines', p: 'unified_printings.gains_subroutines' },
-		keywords: ['gains_subroutines'],
-		documentation: 'Does the card text allow for adding or gaining subroutines?'
+		keywords: ['gains_subroutines']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.gains_click', p: 'unified_printings.gains_click' },
-		keywords: ['gains_click'],
-		documentation: 'Does the card have a gain click ability?'
+		keywords: ['gains_click']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.has_paid_ability', p: 'unified_printings.has_paid_ability' },
-		keywords: ['has_paid_ability'],
-		documentation: 'Does the card have a paid ability?'
+		keywords: ['has_paid_ability']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.in_restriction', p: 'unified_printings.in_restriction' },
-		keywords: ['in_restriction'],
-		documentation: 'Is the card specified on any Restriction list?'
+		keywords: ['in_restriction']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.install_effect', p: 'unified_printings.install_effect' },
-		keywords: ['install_effect'],
-		documentation: 'Does the card have an install effect?'
+		keywords: ['install_effect']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.interrupt', p: 'unified_printings.interrupt' },
-		keywords: ['interrupt'],
-		documentation: 'Does the card have an interrupt ability?'
+		keywords: ['interrupt']
 	},
 	{
 		type: 'boolean',
 		sql: { p: 'unified_printings.is_latest_printing' },
-		keywords: ['is_latest_printing'],
-		documentation: 'Is this printing the latest printing for a card?'
+		keywords: ['is_latest_printing']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.is_unique', p: 'unified_printings.is_unique' },
-		keywords: ['is_unique', 'u'],
-		documentation: 'Is the card unique?'
+		keywords: ['is_unique', 'u']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.mark', p: 'unified_printings.mark' },
-		keywords: ['mark'],
-		documentation: 'Does the card refer to the mark?'
+		keywords: ['mark']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.on_encounter_effect', p: 'unified_printings.on_encounter_effect' },
-		keywords: ['on_encounter_effect'],
-		documentation: 'Does the card text specify an on encounter effect?'
+		keywords: ['on_encounter_effect']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.performs_trace', p: 'unified_printings.performs_trace' },
-		keywords: ['performs_trace'],
-		documentation: 'Does the card perform a trace?'
+		keywords: ['performs_trace']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.rez_effect', p: 'unified_printings.rez_effect' },
-		keywords: ['rez_effect'],
-		documentation: 'Does the card have a rez effect?'
+		keywords: ['rez_effect']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.sabotage', p: 'unified_printings.sabotage' },
-		keywords: ['sabotage'],
-		documentation: 'Does the card have a sabotage ability?'
+		keywords: ['sabotage']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.score_effect', p: 'unified_printings.score_effect' },
-		keywords: ['score_effect'],
-		documentation: 'Does the card have a score effect?'
+		keywords: ['score_effect']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.steal_effect', p: 'unified_printings.steal_effect' },
-		keywords: ['steal_effect'],
-		documentation: 'Does the card have a steal effect?'
+		keywords: ['steal_effect']
 	},
 	{
 		type: 'boolean',
 		sql: { c: 'unified_cards.trash_ability', p: 'unified_printings.trash_ability' },
-		keywords: ['trash_ability'],
-		documentation: 'Does the card provide a trash ability?'
+		keywords: ['trash_ability']
 	},
 	{
 		type: 'date',
 		sql: { c: 'unified_cards.date_release', p: 'unified_printings.date_release' },
-		keywords: ['release_date', 'date_release', 'r'],
-		documentation:
-			'The earliest release date for a card or the release date for the set for a printing.'
+		keywords: ['release_date', 'date_release', 'r']
 	},
 	{
 		type: 'format',
 		sql: { c: 'unified_cards.ignored_placeholder', p: 'unified_printings.ignored_placeholder' },
-		keywords: ['format'],
-		documentation:
-			'Format. When specifying a named format, this will expand to cover the latest snapshot for that format including card pool and restriction, with any banned cards removed.'
+		keywords: ['format']
 	},
 	{
 		type: 'integer',
@@ -370,52 +323,42 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.advancement_requirement',
 			p: 'unified_printings.advancement_requirement'
 		},
-		keywords: ['advancement_cost', 'g'],
-		documentation:
-			'The `advancement_cost` value for an agenda. Accepts positive integers and X (case-insensitive).'
+		keywords: ['advancement_cost', 'g']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.agenda_points', p: 'unified_printings.agenda_points' },
-		keywords: ['agenda_points', 'v'],
-		documentation: 'The printed number of agenda points for the agenda.'
+		keywords: ['agenda_points', 'v']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.base_link', p: 'unified_printings.base_link' },
-		keywords: ['base_link', 'l'],
-		documentation: 'The printed link value for an Identity.'
+		keywords: ['base_link', 'l']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.cost', p: 'unified_printings.cost' },
-		keywords: ['cost', 'o'],
-		documentation:
-			'The printed cost of a card. Accepts positive integers and X (case-insensitive).'
+		keywords: ['cost', 'o']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.influence_cost', p: 'unified_printings.influence_cost' },
-		keywords: ['influence_cost', 'n'],
-		documentation: 'The influence cost or number of influence pips for the card.'
+		keywords: ['influence_cost', 'n']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.link_provided', p: 'unified_printings.link_provided' },
-		keywords: ['link_provided'],
-		documentation: 'The amount of link provided.'
+		keywords: ['link_provided']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.memory_cost', p: 'unified_printings.memory_cost' },
-		keywords: ['memory_usage', 'm'],
-		documentation: 'The memory (MU) cost of this card.'
+		keywords: ['memory_usage', 'm']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.mu_provided', p: 'unified_printings.mu_provided' },
-		keywords: ['mu_provided'],
-		documentation: 'The amount of memory (MU) provided by the card.'
+		keywords: ['mu_provided']
 	},
 	{
 		type: 'integer',
@@ -423,32 +366,27 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.num_printed_subroutines',
 			p: 'unified_printings.num_printed_subroutines'
 		},
-		keywords: ['num_printed_subroutines'],
-		documentation: 'The number of printed subroutines on this card.'
+		keywords: ['num_printed_subroutines']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.minimum_deck_size', p: 'unified_printings.minimum_deck_size' },
-		keywords: ['minimum_deck_size', 'min_deck_size'],
-		documentation: 'The minimum deck size required by an Identity.'
+		keywords: ['minimum_deck_size', 'min_deck_size']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.num_printings', p: 'unified_printings.num_printings' },
-		keywords: ['num_printings'],
-		documentation: 'Count of unique printings for this card.'
+		keywords: ['num_printings']
 	},
 	{
 		type: 'integer',
 		sql: { p: 'unified_printings.position' },
-		keywords: ['position'],
-		documentation: 'The position of the printing in a card set.'
+		keywords: ['position']
 	},
 	{
 		type: 'integer',
 		sql: { p: 'unified_printings.quantity' },
-		keywords: ['quantity', 'y'],
-		documentation: 'The number of copies of a printing in the set.'
+		keywords: ['quantity', 'y']
 	},
 	{
 		type: 'integer',
@@ -456,106 +394,87 @@ export const fullFields: FullFieldData[] = [
 			c: 'unified_cards.recurring_credits_provided',
 			p: 'unified_printings.recurring_credits_provided'
 		},
-		keywords: ['recurring_credits_provided'],
-		documentation:
-			'The number of recurring credits provided by this card. Accepts integers or X.'
+		keywords: ['recurring_credits_provided']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.strength', p: 'unified_printings.strength' },
-		keywords: ['strength', 'p'],
-		documentation: 'The strength of the card. Accepts integers or X.'
+		keywords: ['strength', 'p']
 	},
 	{
 		type: 'integer',
 		sql: { c: 'unified_cards.trash_cost', p: 'unified_printings.trash_cost' },
-		keywords: ['trash_cost', 'h'],
-		documentation: 'The trash cost of this card.'
+		keywords: ['trash_cost', 'h']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.attribution', p: 'unified_printings.attribution' },
-		keywords: ['attribution'],
-		documentation: 'The designer of this card text, if specified.'
+		keywords: ['attribution']
 	},
 	{
 		type: 'string',
 		sql: { p: 'unified_printings.card_cycle_id' },
-		keywords: ['card_cycle', 'c'],
-		documentation: '`card_cycle_id` for a printing.'
+		keywords: ['card_cycle', 'c']
 	},
 	{
 		type: 'string',
 		sql: { p: 'unified_printings.card_id' },
-		keywords: ['card_id'],
-		documentation: '`card_id` for a printing.'
+		keywords: ['card_id']
 	},
 	{
 		type: 'string',
 		sql: { p: 'unified_printings.card_set_id' },
-		keywords: ['card_set', 'e'],
-		documentation: '`card_set_id` for printing.'
+		keywords: ['card_set', 'e']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.card_type_id', p: 'unified_printings.card_type_id' },
-		keywords: ['card_type', 't'],
-		documentation: '`card_type_id` of this card.'
+		keywords: ['card_type', 't']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.designed_by', p: 'unified_printings.designed_by' },
-		keywords: ['designed_by'],
-		documentation: 'The organization that designed the card.'
+		keywords: ['designed_by']
 	},
 	{
 		type: 'string',
 		sql: { p: 'unified_printings.display_illustrators' },
-		keywords: ['illustrator', 'i'],
-		documentation:
-			'The printed version of the illustrator credits, with multiple illustrators separated by commas.'
+		keywords: ['illustrator', 'i']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.faction_id', p: 'unified_printings.faction_id' },
-		keywords: ['faction', 'f'],
-		documentation: '`faction_id` of this card.'
+		keywords: ['faction', 'f']
 	},
 	{
 		type: 'string',
 		sql: { p: 'unified_printings.flavor' },
-		keywords: ['flavor', 'flavour', 'a'],
-		documentation: 'The flavor text for a printing.'
+		keywords: ['flavor', 'flavour', 'a']
 	},
 	{
 		type: 'string',
 		sql: { p: 'unified_printings.released_by' },
-		keywords: ['released_by'],
-		documentation: 'The organization that released the printing.'
+		keywords: ['released_by']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.side_id', p: 'unified_printings.side_id' },
-		keywords: ['side', 'd'],
-		documentation: '`side_id` of the card.'
+		keywords: ['side', 'd']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.stripped_text', p: 'unified_printings.stripped_text' },
-		keywords: ['stripped_text', 'x', 'text'],
-		documentation: 'The text of a card, stripped of all formatting symbols and marks.'
+		keywords: ['stripped_text', 'x', 'text']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.stripped_title', p: 'unified_printings.stripped_title' },
-		keywords: ['stripped_title', 'title', '_'],
-		documentation: 'The title of a card, stripped of all formatting symbols and marks.'
+		keywords: ['stripped_title', 'title', '_']
 	},
 	{
 		type: 'string',
 		sql: { c: 'unified_cards.id', p: 'unified_printings.id' },
-		keywords: ['id'],
-		documentation: 'The string id for this type.'
+		keywords: ['id']
 	}
 ];
 
@@ -913,22 +832,16 @@ function compileLiteral(
 export class SearchQueryBuilder {
 	where: string = '';
 	where_values: string[] = [];
-	left_joins: string[] = [];
 	parse_error: Error | null = null;
 
 	constructor(query: string, fields: FieldData[]) {
-		try {
-			const matchResult = queryGrammar.match(query);
-			if (matchResult.failed()) {
-				this.parse_error = new Error(matchResult.message);
-				return;
-			}
-			const ast = semantics(matchResult).eval();
-			this.where = compileNode(ast, fields, this.where_values);
-			// oxlint-disable-next-line no-useless-catch
-		} catch (e: any) {
-			throw e;
+		const matchResult = queryGrammar.match(query);
+		if (matchResult.failed()) {
+			this.parse_error = new Error(matchResult.message);
+			return;
 		}
+		const ast = semantics(matchResult).eval();
+		this.where = compileNode(ast, fields, this.where_values);
 	}
 }
 
@@ -939,8 +852,7 @@ export class CardSearchQueryBuilder extends SearchQueryBuilder {
 			.map((f) => ({
 				type: f.type,
 				sql: f.sql.c!,
-				keywords: f.keywords,
-				documentation: f.documentation
+				keywords: f.keywords
 			}));
 		super(query, cardFields);
 	}
@@ -953,8 +865,7 @@ export class PrintingSearchQueryBuilder extends SearchQueryBuilder {
 			.map((f) => ({
 				type: f.type,
 				sql: f.sql.p!,
-				keywords: f.keywords,
-				documentation: f.documentation
+				keywords: f.keywords
 			}));
 		super(query, printingFields);
 	}
