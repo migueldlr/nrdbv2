@@ -232,21 +232,28 @@ export function recognizeIntents(remainder: string): IntentMatch[] {
 	let i = 0;
 
 	while (i < words.length) {
-		const negated = negatedSet.has(i);
-		const intents: Intent[] = [];
-		const consumed = matchAt(words, i, negated, intents);
-		const phrase = words.slice(i, i + consumed).join(' ');
-		matches.push(...intents.map((intent) => ({ intent, phrase })));
+		// bare digits are leftovers from the numeric pre-pass
+		if (/^\d+$/.test(words[i])) {
+			i++;
+			continue;
+		}
+
+		const { intent, consumed } = matchAt(words, i, negatedSet.has(i));
+		matches.push({ intent, phrase: words.slice(i, i + consumed).join(' ') });
 		i += consumed;
 	}
 
 	return matches;
 }
 
-// Matches the longest phrase at index i and returns words consumed. Lookup order
-// semantic > boolean > faction > type > subtype > side keeps single-word side from
-// shadowing "corp"/"runner" subtypes.
-function matchAt(words: string[], i: number, negated: boolean, intents: Intent[]): number {
+// Matches the longest phrase at index i and returns the intent it produced.
+// Longer phrases win; single-word side terms are checked last, after SUBTYPE_MAP,
+// which excludes corp/runner so they stay sides.
+function matchAt(
+	words: string[],
+	i: number,
+	negated: boolean
+): { intent: Intent; consumed: number } {
 	const maxLen = Math.min(getMaxPhraseWords(), words.length - i);
 
 	for (let len = maxLen; len >= 1; len--) {
@@ -254,58 +261,55 @@ function matchAt(words: string[], i: number, negated: boolean, intents: Intent[]
 
 		const sem = SEMANTIC_MAP.get(phrase);
 		if (sem) {
-			intents.push({ kind: 'semantic', tokens: sem });
-			return len;
+			return { intent: { kind: 'semantic', tokens: sem }, consumed: len };
 		}
 
 		if (phrase in BOOLEAN_MAP) {
 			const { field, onValue } = BOOLEAN_MAP[phrase];
 			const value: 0 | 1 = negated ? ((1 - onValue) as 0 | 1) : onValue;
-			intents.push({ kind: 'boolean', field, value });
-			return len;
+			return { intent: { kind: 'boolean', field, value }, consumed: len };
 		}
 
 		if (phrase in FACTION_MAP) {
-			intents.push({ kind: 'faction', value: FACTION_MAP[phrase], negated });
-			return len;
+			return {
+				intent: { kind: 'faction', value: FACTION_MAP[phrase], negated },
+				consumed: len
+			};
 		}
 
 		if (phrase in CARD_TYPE_MAP) {
-			intents.push({ kind: 'type', value: CARD_TYPE_MAP[phrase], negated });
-			return len;
+			return {
+				intent: { kind: 'type', value: CARD_TYPE_MAP[phrase], negated },
+				consumed: len
+			};
 		}
 
 		if (phrase in SUBTYPE_MAP) {
-			intents.push({ kind: 'subtype', value: SUBTYPE_MAP[phrase], negated });
-			return len;
+			return {
+				intent: { kind: 'subtype', value: SUBTYPE_MAP[phrase], negated },
+				consumed: len
+			};
 		}
 
 		if (phrase in SET_MAP) {
-			intents.push({ kind: 'set', value: SET_MAP[phrase], negated });
-			return len;
+			return { intent: { kind: 'set', value: SET_MAP[phrase], negated }, consumed: len };
 		}
 
 		if (phrase in CYCLE_MAP) {
-			intents.push({ kind: 'cycle', value: CYCLE_MAP[phrase], negated });
-			return len;
+			return { intent: { kind: 'cycle', value: CYCLE_MAP[phrase], negated }, consumed: len };
 		}
 
 		if (len === 1 && phrase in SIDE_MAP) {
-			intents.push({ kind: 'side', value: SIDE_MAP[phrase], negated });
-			return 1;
+			return { intent: { kind: 'side', value: SIDE_MAP[phrase], negated }, consumed: 1 };
 		}
 	}
 
 	const word = words[i];
 	if (word === 'or') {
-		intents.push({ kind: 'or_marker' });
-		return 1;
+		return { intent: { kind: 'or_marker' }, consumed: 1 };
 	}
-	// bare digits are leftovers from the numeric pre-pass
-	if (/^\d+$/.test(word)) return 1;
 
-	intents.push({ kind: 'freeform', word });
-	return 1;
+	return { intent: { kind: 'freeform', word }, consumed: 1 };
 }
 
 const KIND_PRIORITY: Record<StructuredIntent['kind'], number> = {
