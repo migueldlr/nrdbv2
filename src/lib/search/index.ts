@@ -36,7 +36,7 @@ export async function searchCards(
 
 // Loads set/cycle/subtype names into the search vocabulary; call once the DB is ready.
 // TODO: move these lookups into a shared global state - many other places will need them.
-export async function initSearchVocab(): Promise<void> {
+async function initSearchVocab(): Promise<void> {
 	const [sets, cycles, subtypes] = (await Promise.all([
 		sql(`SELECT id, name FROM card_sets`),
 		sql(`SELECT id, name FROM card_cycles`),

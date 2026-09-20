@@ -113,9 +113,6 @@ export interface IntentMatch {
 	phrase: string;
 }
 
-// Must stay in sync with resolveNeutralFaction on the consuming side.
-export const NEUTRAL_FACTION_OR_QUERY = '(f:neutral_corp or f:neutral_runner)';
-
 export function normalizeInput(input: string): string {
 	return (
 		input
@@ -391,7 +388,7 @@ function arrayFieldStr(prefix: string, v: string | string[], negated: boolean): 
 	return negated ? `${prefix}!${v}` : `${prefix}:${v}`;
 }
 
-export function intentFilterStr(intent: StructuredIntent): string {
+function intentFilterStr(intent: StructuredIntent): string {
 	switch (intent.kind) {
 		case 'side':
 			return intent.negated ? `d!${intent.value}` : `d:${intent.value}`;

@@ -1,8 +1,17 @@
 import { FACTIONS } from './constants';
 import type { ActiveCardPoolIds, DeckFormat } from './deck_formats';
 import { faction_name } from './i18n';
-import { normalizedIncludes } from './search/filter';
 import type { Card, Faction, FactionIds, SidesIds } from './types';
+
+const normalize = (str: string): string =>
+	str
+		.trim()
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/\p{Diacritic}/gu, '');
+
+const normalizedIncludes = (str: string, search: string): boolean =>
+	normalize(str).includes(normalize(search));
 
 export interface DecklistCatalog {
 	cards: Card[];
