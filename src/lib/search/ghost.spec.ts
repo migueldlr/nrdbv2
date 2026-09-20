@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { buildCompletionTiers, getGhostRemainder, getWordRangeAtCursor } from './ghost';
-import { populateSubtypeMap } from './vocabulary';
+import { populateSubtypeMap, populateDynamicVocab } from './vocabulary';
 import { SUBTYPE_FIXTURE } from './subtypes.fixture';
 
 beforeAll(() => populateSubtypeMap(SUBTYPE_FIXTURE));
@@ -50,6 +50,14 @@ describe('buildCompletionTiers', () => {
 	it('memoizes tiers until the subtype map changes', () => {
 		const first = buildCompletionTiers();
 		expect(buildCompletionTiers()).toBe(first);
+	});
+
+	it('rebuilds tiers after the vocabulary is repopulated', () => {
+		const before = buildCompletionTiers();
+		populateDynamicVocab([{ id: 'new_set', name: 'New Set' }], [], SUBTYPE_FIXTURE);
+
+		expect(buildCompletionTiers()).not.toBe(before);
+		expect(buildCompletionTiers()[3]).toContain('new set');
 	});
 });
 

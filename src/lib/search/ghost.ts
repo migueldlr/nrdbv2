@@ -4,7 +4,8 @@ import {
 	CYCLE_MAP,
 	FACTION_MAP,
 	SET_MAP,
-	SUBTYPE_MAP
+	SUBTYPE_MAP,
+	VOCABULARY_VERSION
 } from './vocabulary';
 
 // Drop plurals when the singular exists, so "events" isn't suggested next to
@@ -31,14 +32,15 @@ function keepCompletablePhrases(map: Record<string, unknown>): string[] {
 const SUBTYPE_PRIORITY = ['sentry'];
 
 // The subtype/set/cycle lists load from the database after startup, so build
-// these tiers on first use and rebuild them if the subtype list changes.
+// these tiers on first use and rebuild them when the vocabulary changes.
 let completionTierCache: string[][] | null = null;
-let completionTierCacheKey = -1;
+let completionTierCacheVersion = -1;
 
 // Tiers in priority order: card types, factions, subtypes, sets+cycles, booleans.
 export function buildCompletionTiers(): string[][] {
-	const key = Object.keys(SUBTYPE_MAP).length;
-	if (completionTierCache && key === completionTierCacheKey) return completionTierCache;
+	if (completionTierCache && completionTierCacheVersion === VOCABULARY_VERSION) {
+		return completionTierCache;
+	}
 
 	completionTierCache = [
 		dropPluralVariants(keepCompletablePhrases(CARD_TYPE_MAP)).sort(),
@@ -52,7 +54,7 @@ export function buildCompletionTiers(): string[][] {
 		[...keepCompletablePhrases(SET_MAP), ...keepCompletablePhrases(CYCLE_MAP)].sort(),
 		dropPluralVariants(keepCompletablePhrases(BOOLEAN_MAP)).sort()
 	];
-	completionTierCacheKey = key;
+	completionTierCacheVersion = VOCABULARY_VERSION;
 	return completionTierCache;
 }
 

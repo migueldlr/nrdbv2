@@ -7,7 +7,7 @@ import {
 	CYCLE_MAP,
 	BOOLEAN_MAP,
 	SEMANTIC_MAP,
-	MAX_PHRASE_WORDS,
+	getMaxPhraseWords,
 	wordToField
 } from './vocabulary';
 import {
@@ -247,7 +247,7 @@ export function recognizeIntents(remainder: string): IntentMatch[] {
 // semantic > boolean > faction > type > subtype > side keeps single-word side from
 // shadowing "corp"/"runner" subtypes.
 function matchAt(words: string[], i: number, negated: boolean, intents: Intent[]): number {
-	const maxLen = Math.min(MAX_PHRASE_WORDS, words.length - i);
+	const maxLen = Math.min(getMaxPhraseWords(), words.length - i);
 
 	for (let len = maxLen; len >= 1; len--) {
 		const phrase = words.slice(i, i + len).join(' ');

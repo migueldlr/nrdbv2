@@ -155,8 +155,19 @@ function computeMaxPhraseWords(): number {
 	);
 }
 
-// Recomputed by populateDynamicVocab once set/cycle/subtype names are loaded.
-export let MAX_PHRASE_WORDS = computeMaxPhraseWords();
+// Bumped whenever a vocabulary map is populated, so derived caches can invalidate.
+export let VOCABULARY_VERSION = 0;
+
+let maxPhraseWordsCache = 0;
+let maxPhraseWordsVersion = -1;
+
+export function getMaxPhraseWords(): number {
+	if (maxPhraseWordsVersion !== VOCABULARY_VERSION) {
+		maxPhraseWordsCache = computeMaxPhraseWords();
+		maxPhraseWordsVersion = VOCABULARY_VERSION;
+	}
+	return maxPhraseWordsCache;
+}
 
 export function populateDynamicVocab(
 	sets: VocabOption[],
@@ -166,7 +177,6 @@ export function populateDynamicVocab(
 	populateMap(SET_MAP, sets);
 	populateMap(CYCLE_MAP, cycles);
 	populateSubtypeMap(subtypes);
-	MAX_PHRASE_WORDS = computeMaxPhraseWords();
 }
 
 function populateMap(target: Record<string, string>, options: VocabOption[]) {
@@ -177,6 +187,7 @@ function populateMap(target: Record<string, string>, options: VocabOption[]) {
 		const lowerIdSpaces = id.toLowerCase().replace(/_/g, ' ');
 		if (lowerIdSpaces !== lowerName) target[lowerIdSpaces] = id;
 	}
+	VOCABULARY_VERSION++;
 }
 
 // Excluded so matchAt (which checks subtypes before sides) doesn't shadow the side intent.
@@ -224,6 +235,8 @@ export function populateSubtypeMap(subtypes: VocabOption[]) {
 	for (const [phrase, token] of Object.entries(SUBTYPE_ALIASES)) {
 		SUBTYPE_MAP[phrase] = token;
 	}
+
+	VOCABULARY_VERSION++;
 }
 
 // Order is cosmetic; buildNumericFieldPattern sorts by word count descending.

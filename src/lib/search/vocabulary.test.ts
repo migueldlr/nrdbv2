@@ -7,7 +7,7 @@ import {
 	BOOLEAN_MAP,
 	SEMANTIC_ENTRIES,
 	SEMANTIC_MAP,
-	MAX_PHRASE_WORDS,
+	getMaxPhraseWords,
 	NUMERIC_FIELDS,
 	wordToField,
 	buildNumericFieldPattern,
@@ -76,9 +76,9 @@ describe('buildNumericFieldPattern', () => {
 	});
 });
 
-describe('MAX_PHRASE_WORDS', () => {
+describe('getMaxPhraseWords', () => {
 	it('is at least 3 (covers current longest phrases like "place advancement counters")', () => {
-		expect(MAX_PHRASE_WORDS).toBeGreaterThanOrEqual(3);
+		expect(getMaxPhraseWords()).toBeGreaterThanOrEqual(3);
 	});
 
 	it('equals the actual maximum phrase length across all maps', () => {
@@ -90,7 +90,18 @@ describe('MAX_PHRASE_WORDS', () => {
 			...SEMANTIC_MAP.keys()
 		];
 		const expected = Math.max(...allPhrases.map((p) => p.split(/\s+/).length));
-		expect(MAX_PHRASE_WORDS).toBe(expected);
+		expect(getMaxPhraseWords()).toBe(expected);
+	});
+
+	it('recomputes when a longer subtype is populated', () => {
+		populateSubtypeMap([
+			...SUBTYPE_FIXTURE,
+			{ id: 'very_long_subtype', name: 'Very Long Subtype Name' }
+		]);
+		expect(getMaxPhraseWords()).toBe(4);
+
+		populateSubtypeMap(SUBTYPE_FIXTURE);
+		expect(getMaxPhraseWords()).toBe(3);
 	});
 });
 
