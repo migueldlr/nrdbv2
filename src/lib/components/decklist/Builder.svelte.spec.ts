@@ -433,8 +433,25 @@ describe('Decklist Builder', () => {
 			)
 		);
 
-		await userEvent.click(page.getByRole('button', { name: 'Startup' }));
+		await userEvent.click(page.getByRole('radio', { name: 'Startup' }));
 		expect(on_select_format).toHaveBeenCalledWith('startup');
+	});
+
+	it('uses toolbar arrow navigation without changing the selected format', async () => {
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM]
+		});
+
+		const toolbar = page.getByRole('toolbar', { name: 'Deck builder filters' });
+		const all = toolbar.getByRole('radio', { name: 'All' });
+		const criminal = toolbar.getByRole('button', { name: 'Criminal' });
+
+		all.element().focus();
+		await userEvent.keyboard('{ArrowRight}');
+
+		await expect.element(criminal).toHaveFocus();
+		await expect.element(all).toHaveAttribute('aria-checked', 'true');
 	});
 
 	it('applies the format clause even without a search query', async () => {
