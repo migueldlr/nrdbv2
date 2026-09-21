@@ -17,7 +17,10 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import CardImage from '../card/CardImage.svelte';
 	import Button from '../ui/Button.svelte';
-	import ToggleGroup, { type ToggleOption } from '../ui/ToggleGroup.svelte';
+	import Toolbar, {
+		type TGroup as ToolbarGroup,
+		type Option as ToolbarOption
+	} from '../ui/Toolbar.svelte';
 	import DeckBuilderSearchResults from './DeckBuilderSearchResults.svelte';
 	import CardQuantity from './CardQuantity.svelte';
 	import Grid from './Grid.svelte';
@@ -57,7 +60,7 @@
 		active_filters.flatMap((filter) => (filter.kind === 'cardType' ? [filter.id] : []))
 	);
 
-	let faction_toggles = $derived<ToggleOption<FactionIds>[]>(
+	let faction_toggles = $derived<ToolbarOption<FactionIds>[]>(
 		collectFactionsInActiveCardPool(side_cards, format, active_card_pool_ids).map(
 			(faction_id) => ({
 				value: faction_id,
@@ -67,14 +70,14 @@
 		)
 	);
 
-	let type_toggles = $derived<ToggleOption<CardTypeIds>[]>(
+	let type_toggles = $derived<ToolbarOption<CardTypeIds>[]>(
 		(side === 'corp' ? CORP_CARD_TYPES : RUNNER_CARD_TYPES).map((card_type_id) => ({
 			value: card_type_id,
 			label: card_types[card_type_id]
 		}))
 	);
 
-	const format_toggles: ToggleOption<DeckFormat>[] = DECK_FORMATS.map((format_option) => ({
+	const format_toggles: ToolbarOption<DeckFormat>[] = DECK_FORMATS.map((format_option) => ({
 		value: format_option,
 		label: i18n_formats[format_option]
 	}));
@@ -128,6 +131,46 @@
 			id: card_type_id
 		});
 	};
+
+	const on_faction_toolbar_change = (selection: string[]) => {
+		const faction_id = faction_toggles.find(
+			({ value }) => faction_filters.includes(value) !== selection.includes(value)
+		)?.value;
+		if (faction_id) on_toggle_faction_change(faction_id);
+	};
+
+	const on_type_toolbar_change = (selection: string[]) => {
+		const card_type_id = type_toggles.find(
+			({ value }) => type_filters.includes(value) !== selection.includes(value)
+		)?.value;
+		if (card_type_id) on_toggle_type_change(card_type_id);
+	};
+
+	let toolbar_groups = $derived<ToolbarGroup[]>([
+		{
+			type: 'single',
+			options: format_toggles,
+			label: m.format(),
+			value: format,
+			onValueChange: (value) => on_select_format(value as DeckFormat)
+		},
+		{
+			type: 'multiple',
+			options: faction_toggles,
+			label: 'Filter by faction',
+			value: faction_filters,
+			onValueChange: on_faction_toolbar_change,
+			icon_only: true
+		},
+		{
+			type: 'multiple',
+			options: type_toggles,
+			label: 'Filter by type',
+			value: type_filters,
+			onValueChange: on_type_toolbar_change,
+			icon_only: true
+		}
+	]);
 
 	const set_card_quantity = (card: TCard, quantity: number) => {
 		deck = setCardSlot(deck, card, quantity);
@@ -222,43 +265,11 @@
 				/>
 			</form>
 
-			<ToggleGroup
-				options={format_toggles}
-				label={m.format()}
-				size="sm"
-				selected={format}
-				onselect={on_select_format}
-			/>
-
-			<div class="builder__filters">
-				<ToggleGroup
-					options={faction_toggles}
-					label="Filter by faction"
-					size="sm"
-					icon_only
-					multiple
-					selection={faction_filters}
-					ontoggle={(_selection, faction_id) => on_toggle_faction_change(faction_id)}
-				>
-					{#snippet option(faction_option)}
-						<Icon name={faction_option.value} size="sm" label="" />
-					{/snippet}
-				</ToggleGroup>
-
-				<ToggleGroup
-					options={type_toggles}
-					label="Filter by type"
-					size="sm"
-					icon_only
-					multiple
-					selection={type_filters}
-					ontoggle={(_selection, card_type_id) => on_toggle_type_change(card_type_id)}
-				>
-					{#snippet option(type_option)}
-						<Icon name={type_option.value} size="sm" label="" />
-					{/snippet}
-				</ToggleGroup>
-			</div>
+			<Toolbar groups={toolbar_groups} label="Deck builder filters">
+				{#snippet option(toolbar_option)}
+					<Icon name={toolbar_option.value} size="sm" label="" />
+				{/snippet}
+			</Toolbar>
 
 			<DeckBuilderSearchResults
 				cards={search_results.cards}
@@ -323,12 +334,6 @@
 
 	.builder__input {
 		width: 100%;
-	}
-
-	.builder__filters {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
 	}
 
 	.builder__tabs {
