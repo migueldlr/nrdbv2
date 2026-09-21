@@ -2,8 +2,8 @@ import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CARNIVORE, RED_TEAM, SURE_GAMBLE } from '$lib/cards.fixture';
-import { ESA, ZAHYA } from '$lib/identities.fixture';
-import type { DeckFormat } from '$lib/deck_formats';
+import { APEX, ESA, ZAHYA } from '$lib/identities.fixture';
+import type { ActiveCardPoolIds, DeckFormat } from '$lib/deck_formats';
 import { createMockCard } from '$lib/test-helpers';
 import { cardModal } from '$lib/store';
 import CardModalHarness from '$lib/test/CardModalHarness.svelte';
@@ -30,10 +30,16 @@ function seedRows(...cards: Card[]) {
 	sqlMock.mockResolvedValue(cards.map((card) => ({ id: card.id })));
 }
 
+const active_card_pool_ids: ActiveCardPoolIds = {
+	standard: 'standard_2026_vantage_point',
+	eternal: 'eternal'
+};
+
 function renderBuilder(
 	props: {
 		identity: string;
 		side_cards: Card[];
+		active_card_pool_ids?: ActiveCardPoolIds;
 		format?: DeckFormat;
 		on_select_format?: (format: DeckFormat) => void;
 	},
@@ -44,6 +50,7 @@ function renderBuilder(
 		{
 			format: 'all',
 			on_select_format: () => {},
+			active_card_pool_ids,
 			...props
 		},
 		options
@@ -387,6 +394,24 @@ describe('Decklist Builder', () => {
 			.toBeVisible();
 	});
 
+	it('shows only the factions with cards in the selected format pool', async () => {
+		const { rerender } = await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, APEX, SURE_GAMBLE]
+		});
+
+		const faction_filter = page.getByRole('group', { name: 'Filter by faction' });
+
+		await expect.element(faction_filter.getByRole('button', { name: 'Apex' })).toBeVisible();
+
+		await rerender({ format: 'standard' });
+
+		expect(faction_filter.getByRole('button', { name: 'Apex' }).query()).toBeNull();
+		await expect
+			.element(faction_filter.getByRole('button', { name: 'Criminal' }))
+			.toBeVisible();
+	});
+
 	it('filters the card pool by the selected format', async () => {
 		seedRows(RED_TEAM);
 
@@ -408,8 +433,25 @@ describe('Decklist Builder', () => {
 			)
 		);
 
-		await userEvent.click(page.getByRole('button', { name: 'Startup' }));
+		await userEvent.click(page.getByRole('radio', { name: 'Startup' }));
 		expect(on_select_format).toHaveBeenCalledWith('startup');
+	});
+
+	it('uses toolbar arrow navigation without changing the selected format', async () => {
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, RED_TEAM]
+		});
+
+		const toolbar = page.getByRole('toolbar', { name: 'Deck builder filters' });
+		const all = toolbar.getByRole('radio', { name: 'All' });
+		const criminal = toolbar.getByRole('button', { name: 'Criminal' });
+
+		all.element().focus();
+		await userEvent.keyboard('{ArrowRight}');
+
+		await expect.element(criminal).toHaveFocus();
+		await expect.element(all).toHaveAttribute('aria-checked', 'true');
 	});
 
 	it('applies the format clause even without a search query', async () => {

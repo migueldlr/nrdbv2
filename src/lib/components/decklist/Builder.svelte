@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { SidesIds, FactionIds, CardTypeIds, Card as TCard, CardGroup } from '$lib/types';
-	import { card_types, formats as i18n_formats, factions as i18n_factions } from '$lib/i18n';
+	import { card_types, faction_name, formats as i18n_formats } from '$lib/i18n';
 	import { CORP_CARD_TYPES, RUNNER_CARD_TYPES } from '$lib/constants';
-	import { DECK_FORMATS, type DeckFormat } from '$lib/deck_formats';
+	import { DECK_FORMATS, type ActiveCardPoolIds, type DeckFormat } from '$lib/deck_formats';
+	import { collectFactionsInActiveCardPool } from '$lib/identities';
 	import { group_cards_by_type } from '$lib/utils';
 	import { searchCards } from '$lib/search';
 	import {
@@ -16,7 +17,10 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import CardImage from '../card/CardImage.svelte';
 	import Button from '../ui/Button.svelte';
-	import ToggleGroup, { type ToggleOption } from '../ui/ToggleGroup.svelte';
+	import Toolbar, {
+		type TGroup as ToolbarGroup,
+		type Option as ToolbarOption
+	} from '../ui/Toolbar.svelte';
 	import DeckBuilderSearchResults from './DeckBuilderSearchResults.svelte';
 	import CardQuantity from './CardQuantity.svelte';
 	import Grid from './Grid.svelte';
@@ -25,11 +29,12 @@
 	interface Props {
 		identity: TCard['id'];
 		side_cards: TCard[];
+		active_card_pool_ids: ActiveCardPoolIds;
 		format: DeckFormat;
 		on_select_format: (format: DeckFormat) => void;
 	}
 
-	let { identity, side_cards, format, on_select_format }: Props = $props();
+	let { identity, side_cards, active_card_pool_ids, format, on_select_format }: Props = $props();
 
 	let search_query = $state('');
 	let active_tab = $state<'Build' | 'Notes' | 'Check' | 'History' | 'Collection' | 'Settings'>(
@@ -55,17 +60,24 @@
 		active_filters.flatMap((filter) => (filter.kind === 'cardType' ? [filter.id] : []))
 	);
 
-	let faction_options = $derived<FactionIds[]>(
-		[...new Set(side_cards.map((card) => card.attributes.faction_id))].sort((a, b) =>
-			i18n_factions[a].localeCompare(i18n_factions[b])
+	let faction_toggles = $derived<ToolbarOption<FactionIds>[]>(
+		collectFactionsInActiveCardPool(side_cards, format, active_card_pool_ids).map(
+			(faction_id) => ({
+				value: faction_id,
+				label: faction_name(faction_id),
+				color: `var(--${faction_id})`
+			})
 		)
 	);
 
-	let type_options = $derived<CardTypeIds[]>(
-		side === 'corp' ? CORP_CARD_TYPES : RUNNER_CARD_TYPES
+	let type_toggles = $derived<ToolbarOption<CardTypeIds>[]>(
+		(side === 'corp' ? CORP_CARD_TYPES : RUNNER_CARD_TYPES).map((card_type_id) => ({
+			value: card_type_id,
+			label: card_types[card_type_id]
+		}))
 	);
 
-	const format_toggles: ToggleOption<DeckFormat>[] = DECK_FORMATS.map((format_option) => ({
+	const format_toggles: ToolbarOption<DeckFormat>[] = DECK_FORMATS.map((format_option) => ({
 		value: format_option,
 		label: i18n_formats[format_option]
 	}));
@@ -110,10 +122,7 @@
 	});
 
 	const on_toggle_faction_change = (faction_id: FactionIds) => {
-		search_query = toggleFilterInQuery(interpreted_query, {
-			kind: 'faction',
-			id: faction_id
-		});
+		search_query = toggleFilterInQuery(interpreted_query, { kind: 'faction', id: faction_id });
 	};
 
 	const on_toggle_type_change = (card_type_id: CardTypeIds) => {
@@ -122,6 +131,46 @@
 			id: card_type_id
 		});
 	};
+
+	const on_faction_toolbar_change = (selection: string[]) => {
+		const faction_id = faction_toggles.find(
+			({ value }) => faction_filters.includes(value) !== selection.includes(value)
+		)?.value;
+		if (faction_id) on_toggle_faction_change(faction_id);
+	};
+
+	const on_type_toolbar_change = (selection: string[]) => {
+		const card_type_id = type_toggles.find(
+			({ value }) => type_filters.includes(value) !== selection.includes(value)
+		)?.value;
+		if (card_type_id) on_toggle_type_change(card_type_id);
+	};
+
+	let toolbar_groups = $derived<ToolbarGroup[]>([
+		{
+			type: 'single',
+			options: format_toggles,
+			label: m.format(),
+			value: format,
+			onValueChange: (value) => on_select_format(value as DeckFormat)
+		},
+		{
+			type: 'multiple',
+			options: faction_toggles,
+			label: 'Filter by faction',
+			value: faction_filters,
+			onValueChange: on_faction_toolbar_change,
+			icon_only: true
+		},
+		{
+			type: 'multiple',
+			options: type_toggles,
+			label: 'Filter by type',
+			value: type_filters,
+			onValueChange: on_type_toolbar_change,
+			icon_only: true
+		}
+	]);
 
 	const set_card_quantity = (card: TCard, quantity: number) => {
 		deck = setCardSlot(deck, card, quantity);
@@ -216,49 +265,11 @@
 				/>
 			</form>
 
-			<ToggleGroup
-				options={format_toggles}
-				label={m.format()}
-				size="sm"
-				selected={format}
-				onselect={on_select_format}
-			/>
-
-			<div class="builder__filters">
-				<section>
-					<h3>Filter by faction</h3>
-					<div class="builder__chips">
-						{#each faction_options as faction_option (faction_option)}
-							<Button
-								color={faction_filters.includes(faction_option)
-									? 'primary'
-									: 'ghost'}
-								aria-pressed={faction_filters.includes(faction_option)}
-								onclick={() => on_toggle_faction_change(faction_option)}
-							>
-								<Icon name={faction_option} size="sm" />
-								{i18n_factions[faction_option]}
-							</Button>
-						{/each}
-					</div>
-				</section>
-
-				<section>
-					<h3>Filter by type</h3>
-					<div class="builder__chips">
-						{#each type_options as type (type)}
-							<Button
-								color={type_filters.includes(type) ? 'primary' : 'ghost'}
-								aria-pressed={type_filters.includes(type)}
-								onclick={() => on_toggle_type_change(type)}
-							>
-								<Icon name={type} size="sm" />
-								{card_types[type]}
-							</Button>
-						{/each}
-					</div>
-				</section>
-			</div>
+			<Toolbar groups={toolbar_groups} label="Deck builder filters">
+				{#snippet option(toolbar_option)}
+					<Icon name={toolbar_option.value} size="sm" label="" />
+				{/snippet}
+			</Toolbar>
 
 			<DeckBuilderSearchResults
 				cards={search_results.cards}
@@ -325,12 +336,6 @@
 		width: 100%;
 	}
 
-	.builder__filters {
-		display: grid;
-		gap: 1rem;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-
 	.builder__tabs {
 		display: flex;
 		gap: 0.5rem;
@@ -347,28 +352,6 @@
     .builder__tabs button.active {
         opacity: 1;
         border-color: var(--text);
-    } */
-
-	.builder__chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	/* .builder__chips button {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.5rem;
-        border: 1px solid var(--border);
-        background: transparent;
-        opacity: 0.5;
-    }
-
-    .builder__chips button.active {
-        background: var(--text);
-        color: var(--foreground);
-        opacity: 1;
     } */
 
 	.builder__notes {
@@ -392,10 +375,6 @@
 
 	@media (width <= 1024px) {
 		.builder {
-			grid-template-columns: 1fr;
-		}
-
-		.builder__filters {
 			grid-template-columns: 1fr;
 		}
 	}
