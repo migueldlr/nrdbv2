@@ -4,7 +4,7 @@
 	import { onNavigate } from '$app/navigation';
 	import { theme as current_theme, db_ready } from '$lib/store';
 	import Meta from '$lib/components/Meta.svelte';
-	import Navigation from '$lib/components/Navigation.svelte';
+	import SiteHeader from '$lib/components/SiteHeader.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { dev } from '$app/environment';
 	import Debug from '$lib/components/Debug.svelte';
@@ -116,7 +116,7 @@
 
 <a class="skip-link" href="#main">Skip to content</a>
 
-<Navigation />
+<SiteHeader />
 
 <Meta />
 

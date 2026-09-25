@@ -1,9 +1,10 @@
 import { test, expect } from './helpers/fixtures';
 import { isMac } from './helpers/platform';
 import {
-	navigationLogo,
-	localeSelect,
-	themeSelect,
+	siteHeaderLogo,
+	accountMenuTrigger,
+	selectLocale,
+	selectTheme,
 	searchInput,
 	searchDropdown,
 	interpretedSearchCheckbox,
@@ -14,10 +15,10 @@ test.describe('Navigation', () => {
 	test('Logo navigates to home', async ({ page }) => {
 		await page.goto('/sets');
 
-		await expect(navigationLogo(page)).toBeVisible();
-		await expect(navigationLogo(page)).toHaveAttribute('href', '/');
+		await expect(siteHeaderLogo(page)).toBeVisible();
+		await expect(siteHeaderLogo(page)).toHaveAttribute('href', '/');
 
-		await navigationLogo(page).click();
+		await siteHeaderLogo(page).click();
 		await page.waitForURL('/');
 	});
 
@@ -25,14 +26,14 @@ test.describe('Navigation', () => {
 		await page.goto('/');
 
 		// Check `de` locale
-		await localeSelect(page).selectOption('de');
+		await selectLocale(page, 'de');
 		await page.waitForURL('/de');
-		await expect(navigationLogo(page)).toHaveAttribute('href', '/de/');
+		await expect(siteHeaderLogo(page)).toHaveAttribute('href', '/de/');
 
 		// Check `en` locale
-		await localeSelect(page).selectOption('en');
+		await selectLocale(page, 'en');
 		await page.waitForURL('/');
-		await expect(navigationLogo(page)).toHaveAttribute('href', '/');
+		await expect(siteHeaderLogo(page)).toHaveAttribute('href', '/');
 	});
 });
 
@@ -41,15 +42,14 @@ test.describe('Theme toggle', () => {
 		await page.goto('/');
 	});
 
-	test('Theme select is visible with light and dark options', async ({ page }) => {
-		const select = themeSelect(page);
-		await expect(select).toBeVisible();
-		await expect(select.locator('option[value="light"]')).toBeAttached();
-		await expect(select.locator('option[value="dark"]')).toBeAttached();
+	test('Account menu is visible with light and dark options', async ({ page }) => {
+		await accountMenuTrigger(page).click();
+		await expect(page.getByRole('menuitemradio', { name: 'Light' })).toBeVisible();
+		await expect(page.getByRole('menuitemradio', { name: 'Dark' })).toBeVisible();
 	});
 
 	test('Selecting light sets data-theme and localStorage to light', async ({ page }) => {
-		await themeSelect(page).selectOption('light');
+		await selectTheme(page, 'light');
 		const { dataTheme, lsTheme } = await page.evaluate(() => ({
 			dataTheme: document.documentElement.getAttribute('data-theme'),
 			lsTheme: localStorage.getItem('theme')
@@ -59,7 +59,7 @@ test.describe('Theme toggle', () => {
 	});
 
 	test('Selecting dark sets data-theme and localStorage to dark', async ({ page }) => {
-		await themeSelect(page).selectOption('dark');
+		await selectTheme(page, 'dark');
 		const { dataTheme, lsTheme } = await page.evaluate(() => ({
 			dataTheme: document.documentElement.getAttribute('data-theme'),
 			lsTheme: localStorage.getItem('theme')
@@ -69,8 +69,8 @@ test.describe('Theme toggle', () => {
 	});
 
 	test('Switching theme changes both data-theme and localStorage', async ({ page }) => {
-		await themeSelect(page).selectOption('light');
-		await themeSelect(page).selectOption('dark');
+		await selectTheme(page, 'light');
+		await selectTheme(page, 'dark');
 		const { dataTheme, lsTheme } = await page.evaluate(() => ({
 			dataTheme: document.documentElement.getAttribute('data-theme'),
 			lsTheme: localStorage.getItem('theme')

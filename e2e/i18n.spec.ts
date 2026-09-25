@@ -1,5 +1,5 @@
 import { test, expect } from './helpers/fixtures';
-import { localeSelect } from './helpers/navigation';
+import { accountMenuTrigger, selectLocale } from './helpers/navigation';
 import { availableLocales, buildLocalePath } from './helpers/i18n';
 
 test.describe('Locale selector', () => {
@@ -8,16 +8,18 @@ test.describe('Locale selector', () => {
 	});
 
 	test('Locale selector is visible', async ({ page }) => {
-		await expect(localeSelect(page)).toBeVisible();
+		await accountMenuTrigger(page).click();
+		await expect(page.getByRole('menuitemradio', { name: 'English' })).toBeVisible();
+		await expect(page.getByRole('menuitemradio', { name: 'Deutsch' })).toBeVisible();
 	});
 
 	test('Changing locale to de redirects to /de/ URL prefix', async ({ page }) => {
-		await localeSelect(page).selectOption('de');
+		await selectLocale(page, 'de');
 		await expect(page).toHaveURL(/\/de\//);
 	});
 
 	test('Changing locale to de stores de in localStorage', async ({ page }) => {
-		await localeSelect(page).selectOption('de');
+		await selectLocale(page, 'de');
 		await page.waitForURL(/\/de\//);
 		const stored = await page.evaluate(() => localStorage.getItem('PARAGLIDE_LOCALE'));
 		expect(stored).toBe('de');
@@ -25,9 +27,9 @@ test.describe('Locale selector', () => {
 
 	test('Default locale (en) uses no URL prefix', async ({ page }) => {
 		// Switch to de first, then back to en
-		await localeSelect(page).selectOption('de');
+		await selectLocale(page, 'de');
 		await page.waitForURL(/\/de\//);
-		await localeSelect(page).selectOption('en');
+		await selectLocale(page, 'en');
 		await page.waitForURL(/\/sets/);
 		await expect(page).toHaveURL(/\/sets$/);
 		await expect(page).not.toHaveURL(/\/en\//);

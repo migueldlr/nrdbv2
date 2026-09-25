@@ -1,8 +1,20 @@
 import type { Page } from '@playwright/test';
 
-export const navigationLogo = (page: Page) => page.locator('.navigation__logo');
-export const localeSelect = (page: Page) => page.locator('select:has(option[value="en"])');
-export const themeSelect = (page: Page) => page.locator('select:has(option[value="light"])');
+export const siteHeaderLogo = (page: Page) => page.locator('.site-header__logo');
+export const accountMenuTrigger = (page: Page) => page.locator('.site-header__account-trigger');
+
+export const selectLocale = async (page: Page, locale: 'en' | 'de') => {
+	await accountMenuTrigger(page).click();
+	await page
+		.getByRole('menuitemradio', { name: locale === 'en' ? 'English' : 'Deutsch' })
+		.click();
+};
+
+export const selectTheme = async (page: Page, theme: 'light' | 'dark') => {
+	await accountMenuTrigger(page).click();
+	await page.getByRole('menuitemradio', { name: theme === 'light' ? 'Light' : 'Dark' }).click();
+};
+
 export const searchInput = (page: Page) => page.locator('input[placeholder="Search"]');
 export const searchDropdown = (page: Page) => page.locator('.search-dropdown');
 export const interpretedSearchCheckbox = (page: Page) =>

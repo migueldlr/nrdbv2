@@ -17,50 +17,61 @@ export const NRDB_CACHE_COOKIE = 'nrdb_cache';
 export const SEARCH_LIMIT = 20;
 export const SEARCH_PREVIEW_LIMIT = 5;
 
-export const NAVIGATION = [
+export const NAVIGATION_GROUPS = [
 	{
-		title: m.home(),
-		url: localizeHref('/')
+		title: m.browse(),
+		items: [
+			{
+				title: m.sets(),
+				url: localizeHref('/sets')
+			},
+			{
+				title: m.cycles(),
+				url: localizeHref('/cycles')
+			},
+			{
+				title: m.factions(),
+				url: localizeHref('/factions')
+			},
+			{
+				title: m.formats(),
+				url: localizeHref('/formats')
+			},
+			{
+				title: m.bans(),
+				url: localizeHref('/bans')
+			},
+			{
+				title: m.illustrators(),
+				url: localizeHref('/illustrators')
+			}
+		]
 	},
 	{
-		title: m.my_decks(),
-		url: localizeHref('/decks')
+		title: m.community(),
+		items: [
+			{
+				title: m.decklists(),
+				url: localizeHref('/decklists')
+			},
+			{
+				title: m.reviews(),
+				url: localizeHref('/reviews')
+			},
+			{
+				title: m.rulings(),
+				url: localizeHref('/rulings')
+			}
+		]
 	},
 	{
-		title: m.decklists(),
-		url: localizeHref('/decklists')
-	},
-	{
-		title: m.sets(),
-		url: localizeHref('/sets')
-	},
-	{
-		title: m.cycles(),
-		url: localizeHref('/cycles')
-	},
-	{
-		title: m.factions(),
-		url: localizeHref('/factions')
-	},
-	{
-		title: m.bans(),
-		url: localizeHref('/bans')
-	},
-	{
-		title: m.formats(),
-		url: localizeHref('/formats')
-	},
-	{
-		title: m.reviews(),
-		url: localizeHref('/reviews')
-	},
-	{
-		title: m.rulings(),
-		url: localizeHref('/rulings')
-	},
-	{
-		title: m.illustrators(),
-		url: localizeHref('/illustrators')
+		title: m.you(),
+		items: [
+			{
+				title: m.my_decks(),
+				url: localizeHref('/decks')
+			}
+		]
 	}
 ];
 
