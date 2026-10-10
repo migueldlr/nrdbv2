@@ -1,13 +1,11 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages.js';
 	import { localizeHref } from '$lib/paraglide/runtime.js';
 	import SearchInput from '$lib/components/SearchInput.svelte';
 	import Logo from '$lib/components/Logo.svelte';
-	import { signIn } from '@auth/sveltekit/client';
 	import { page } from '$app/state';
 	import { APP_NAME, PRIMARY_NAVIGATION } from '$lib/constants';
 	import { isCurrentPath } from '$lib/utils';
-	import Button from '$lib/components/ui/Button.svelte';
+	import AccountMenu from '$lib/components/AccountMenu.svelte';
 </script>
 
 <header class="navigation">
@@ -41,27 +39,7 @@
 		</div>
 
 		<div class="navigation__account">
-			<div>
-				{#if page.data.session}
-					{#if page.data.session.user?.image}
-						<img src={page.data.session.user.image} class="avatar" alt="User Avatar" />
-					{/if}
-					<span class="signedInText">
-						<small>Signed in as</small><br />
-						<strong>{page.data.session.user?.name ?? 'User'}</strong>
-					</span>
-					<form method="POST" action="/signout">
-						<Button type="submit">
-							{m.logout()}
-						</Button>
-					</form>
-				{:else}
-					<!-- <span class="notSignedInText">You are not signed in</span>	 -->
-					<Button onclick={() => signIn('nsg-keycloak')}>
-						{m.login()}/{m.register()}
-					</Button>
-				{/if}
-			</div>
+			<AccountMenu />
 		</div>
 	</div>
 </header>
@@ -77,7 +55,7 @@
 		grid-template-columns: minmax(min-content, 1fr) minmax(0, 40rem) minmax(min-content, 1fr);
 		align-items: center;
 		gap: 1rem;
-		padding-block: 0.75rem;
+		padding-block: 0.5rem;
 	}
 
 	.navigation__left {
@@ -102,23 +80,24 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		box-sizing: border-box;
 		min-height: 2.25rem;
-		padding: 0.4375rem 0.0625rem 0.3125rem;
-		border-bottom: 2px solid transparent;
+		padding: 0.375rem 0.0625rem;
 		font-weight: var(--font-weight-medium);
 		color: var(--text-muted);
-		text-decoration: none;
+		text-decoration: underline 2px transparent;
+		text-underline-offset: 0.25rem;
 		white-space: nowrap;
 	}
 
 	.navigation__lower a:hover {
 		color: var(--text);
-		border-bottom-color: var(--border);
+		text-decoration-color: var(--border);
 	}
 
 	.navigation__lower a[aria-current='page'] {
 		color: var(--text);
-		border-bottom-color: var(--text);
+		text-decoration-color: var(--text);
 	}
 
 	.navigation__lower a:focus-visible {
