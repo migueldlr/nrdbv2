@@ -1,19 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { load } from './+page.server';
 import type { PageServerLoad } from './$types';
+import type { Session } from '@auth/sveltekit';
 import { privateDeck } from '../../../stories/decklist.fixture';
 
 const response = (data: unknown) => new Response(JSON.stringify({ data }));
 const event = ({
 	fetcher,
-	token = 'test-token'
+	session = { accessToken: 'test-token' }
 }: {
 	fetcher: typeof fetch;
-	token?: string | null;
+	session?: Partial<Session> | null;
 }) =>
 	({
 		fetch: fetcher,
-		locals: { auth: async () => (token ? { accessToken: token } : null) }
+		locals: { auth: async () => session }
 	}) as unknown as Parameters<PageServerLoad>[0];
 
 describe('saved deck list', () => {
@@ -27,9 +28,18 @@ describe('saved deck list', () => {
 		expect(options.headers.Authorization).toBe('Bearer test-token');
 	});
 
-	it('makes no API request without a session token', async () => {
+	it.each([
+		['no session', null],
+		['a rejected refresh token', { error: 'RefreshTokenError' as const }]
+	])('requires reauthentication with %s', async (_label, session) => {
 		const fetcher = vi.fn();
-		await expect(load(event({ fetcher, token: null }))).rejects.toMatchObject({ status: 401 });
+		await expect(load(event({ fetcher, session }))).rejects.toMatchObject({ status: 401 });
+		expect(fetcher).not.toHaveBeenCalled();
+	});
+
+	it('asks to retry when a transient refresh failure left no access token', async () => {
+		const fetcher = vi.fn();
+		await expect(load(event({ fetcher, session: {} }))).rejects.toMatchObject({ status: 503 });
 		expect(fetcher).not.toHaveBeenCalled();
 	});
 

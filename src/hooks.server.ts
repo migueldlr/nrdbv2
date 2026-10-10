@@ -13,6 +13,14 @@ export const opfsHandle: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
+// Share one session lookup per request so concurrent loads don't each refresh the same token.
+const sessionHandle: Handle = ({ event, resolve }) => {
+	const auth = event.locals.auth;
+	let session: ReturnType<typeof auth> | undefined;
+	event.locals.auth = () => (session ??= auth());
+	return resolve(event);
+};
+
 // creating a handle to use the paraglide middleware
 const paraglideHandle: Handle = ({ event, resolve }) =>
 	paraglideMiddleware(event.request, ({ request: localizedRequest, locale }) => {
@@ -24,4 +32,4 @@ const paraglideHandle: Handle = ({ event, resolve }) =>
 		});
 	});
 
-export const handle: Handle = sequence(opfsHandle, authHandle, paraglideHandle);
+export const handle: Handle = sequence(opfsHandle, authHandle, sessionHandle, paraglideHandle);

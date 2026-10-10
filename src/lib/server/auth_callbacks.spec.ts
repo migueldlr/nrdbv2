@@ -1,0 +1,173 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createAuthCallbacks } from './auth_callbacks';
+
+const now = 1_800_000_000;
+const oldToken = {
+	sub: 'test-user',
+	accessToken: 'old-access',
+	refreshToken: 'old-refresh',
+	idToken: 'old-id',
+	expiresAt: now - 1
+};
+const refreshed = {
+	access_token: 'new-access',
+	refresh_token: 'new-refresh',
+	id_token: 'new-id',
+	expires_in: 300
+};
+const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
+
+function setup(fetcher = vi.fn().mockResolvedValue(response(refreshed))) {
+	const callbacks = createAuthCallbacks({
+		issuer: 'https://identity.test/realms/test/',
+		clientId: 'test-client',
+		clientSecret: 'test-secret',
+		fetcher
+	});
+	const jwt = callbacks.jwt!;
+	const run = (
+		token: Parameters<typeof jwt>[0]['token'] = oldToken,
+		account?: Record<string, unknown>
+	) =>
+		jwt({
+			token,
+			user: { id: 'test-user' },
+			account: account
+				? { provider: 'test', providerAccountId: 'test-user', type: 'oidc', ...account }
+				: null
+		});
+	return { callbacks, fetcher, run };
+}
+
+beforeEach(() => {
+	vi.useFakeTimers();
+	vi.setSystemTime(now * 1000);
+});
+afterEach(() => {
+	vi.clearAllTimers();
+	vi.useRealTimers();
+});
+
+describe('Keycloak token refresh', () => {
+	it('persists the refresh token and expiry on login and clears previous errors', async () => {
+		const { run, fetcher } = setup();
+		expect(
+			await run(
+				{ ...oldToken, error: 'RefreshTokenError' },
+				{
+					access_token: 'login-access',
+					refresh_token: 'login-refresh',
+					id_token: 'login-id',
+					expires_at: now + 300
+				}
+			)
+		).toMatchObject({
+			accessToken: 'login-access',
+			refreshToken: 'login-refresh',
+			idToken: 'login-id',
+			expiresAt: now + 300,
+			error: undefined
+		});
+		expect(fetcher).not.toHaveBeenCalled();
+	});
+
+	it('reuses an access token outside the expiry buffer', async () => {
+		const { run, fetcher } = setup();
+		const token = { ...oldToken, expiresAt: now + 31 };
+		expect(await run(token)).toEqual(token);
+		expect(fetcher).not.toHaveBeenCalled();
+	});
+
+	it('exchanges an expired token server-side and stores the rotated tokens', async () => {
+		const { run, fetcher } = setup();
+		const token = await run();
+		expect(token).toMatchObject({
+			sub: 'test-user',
+			accessToken: 'new-access',
+			refreshToken: 'new-refresh',
+			idToken: 'new-id',
+			expiresAt: now + 300
+		});
+		expect(token?.error).toBeUndefined();
+		const [url, options] = fetcher.mock.calls[0];
+		expect(url).toBe('https://identity.test/realms/test/protocol/openid-connect/token');
+		expect(options.method).toBe('POST');
+		expect(Object.fromEntries(options.body)).toEqual({
+			grant_type: 'refresh_token',
+			client_id: 'test-client',
+			client_secret: 'test-secret',
+			refresh_token: 'old-refresh'
+		});
+	});
+
+	it('refreshes within thirty seconds of expiry', async () => {
+		const { run, fetcher } = setup();
+		expect(await run({ ...oldToken, expiresAt: now + 30 })).toMatchObject({
+			accessToken: 'new-access'
+		});
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
+	it('preserves refresh and ID tokens when Keycloak does not replace them', async () => {
+		const { run } = setup(
+			vi.fn().mockResolvedValue(response({ access_token: 'new-access', expires_in: 300 }))
+		);
+		expect(await run()).toMatchObject({
+			accessToken: 'new-access',
+			refreshToken: 'old-refresh',
+			idToken: 'old-id'
+		});
+	});
+
+	it.each([
+		['revoked refresh token', () => response({ error: 'invalid_grant' }, 400)],
+		['rejected client credentials', () => response({ error: 'invalid_client' }, 401)],
+		['malformed response', () => response({ access_token: 'new-access' })]
+	])('requires reauthentication after %s', async (_label, result) => {
+		const { run, fetcher } = setup(vi.fn().mockImplementation(result));
+		const token = await run();
+		expect(token).toMatchObject({ accessToken: undefined, error: 'RefreshTokenError' });
+		await run(token!);
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
+	it.each([
+		['network failure', () => Promise.reject(new Error('Network unavailable'))],
+		['timeout', () => Promise.reject(new DOMException('Timed out', 'TimeoutError'))],
+		['server error', () => response({ error: 'unknown_error' }, 503)],
+		['unparseable response', () => new Response('<html>Bad gateway</html>', { status: 200 })]
+	])('retries on the next request after a %s', async (_label, result) => {
+		const fetcher = vi
+			.fn()
+			.mockImplementationOnce(result)
+			.mockResolvedValue(response(refreshed));
+		const { run } = setup(fetcher);
+		const token = await run();
+		expect(token).toMatchObject({ accessToken: undefined, refreshToken: 'old-refresh' });
+		expect(token?.error).toBeUndefined();
+		const retried = await run(token!);
+		expect(retried).toMatchObject({ accessToken: 'new-access' });
+		expect(retried?.error).toBeUndefined();
+		expect(fetcher).toHaveBeenCalledTimes(2);
+	});
+
+	it('requires a fresh login for legacy sessions without a refresh token', async () => {
+		const { run, fetcher } = setup();
+		expect(await run({ ...oldToken, refreshToken: undefined })).toMatchObject({
+			accessToken: undefined,
+			error: 'RefreshTokenError'
+		});
+		expect(fetcher).not.toHaveBeenCalled();
+	});
+
+	it('exposes the access token but keeps the refresh token out of the client session', async () => {
+		const { callbacks } = setup();
+		const sessionCallback = callbacks.session!;
+		const session = await sessionCallback({
+			session: { user: { name: 'Test' }, expires: 'future' },
+			token: oldToken
+		} as unknown as Parameters<typeof sessionCallback>[0]);
+		expect(session).toMatchObject({ accessToken: 'old-access', idToken: 'old-id' });
+		expect(session).not.toHaveProperty('refreshToken');
+	});
+});
