@@ -41,6 +41,8 @@ export const secondDecklist: Decklist = {
 	}
 };
 
+export const privateDeck: Decklist = { ...decklist, type: 'decks' };
+
 export const cards: Card[] = [
 	createMockCard(
 		'haas_bioroid_precision_design',
