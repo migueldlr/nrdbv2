@@ -246,7 +246,7 @@ export interface Comment {
 
 export interface Decklist {
 	id: string;
-	type: 'decklists';
+	type: 'decklists' | 'decks';
 	attributes: {
 		user_id: string;
 		follows_basic_deckbuilding_rules: boolean;

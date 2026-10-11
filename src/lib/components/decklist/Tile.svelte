@@ -14,6 +14,7 @@
 
 	const attributes = $derived(decklist.attributes);
 	const faction_id = $derived(attributes.faction_id);
+	const is_private = $derived(decklist.type === 'decks');
 
 	const fan_tier = (card: Card): number => {
 		const { faction_id: card_faction } = card.attributes;
@@ -50,7 +51,7 @@
 
 <a
 	class="tile"
-	href={localizeHref(`/decklist/${decklist.id}`)}
+	href={localizeHref(`${is_private ? '/decks' : '/decklist'}/${decklist.id}`)}
 	data-sveltekit-preload-data
 	onmouseenter={() => (hover = true)}
 	onmouseleave={() => (hover = false)}
@@ -65,10 +66,12 @@
 
 	<span class="tile__content">
 		<span class="tile__title">{attributes.name}</span>
-		<span class="tile__author" style="color: var(--{faction_id})">
-			<UserRoundIcon size={16} aria-hidden="true" />
-			{attributes.user_id}
-		</span>
+		{#if !is_private}
+			<span class="tile__author" style="color: var(--{faction_id})">
+				<UserRoundIcon size={16} aria-hidden="true" />
+				{attributes.user_id}
+			</span>
+		{/if}
 	</span>
 </a>
 

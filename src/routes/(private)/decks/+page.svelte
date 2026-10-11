@@ -1,40 +1,34 @@
 <script lang="ts">
+	import type { PageData } from './$types';
 	import Header from '$lib/components/Header.svelte';
 	import Container from '$lib/components/Container.svelte';
-	import { m } from '$lib/paraglide/messages.js';
-	import { localizeHref } from '$lib/paraglide/runtime.js';
-	import { page } from '$app/state';
-	import type { Decklist } from '$lib/types';
+	import Meta from '$lib/components/Meta.svelte';
+	import Tiles from '$lib/components/decklist/Tiles.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
-	interface Props {
-		data: {
-			decks: Decklist[];
-		};
-	}
-
-	let { data }: Props = $props();
+	let { data }: { data: PageData } = $props();
 </script>
 
-<!-- TODO: i18n values -->
-<Header title="Decks" subtitle="Manage your decks" />
+<Meta title="My decks" />
+
+<Header title="My decks">
+	{#snippet actions()}
+		<Button href={localizeHref('/decklist/create')}>Build a deck</Button>
+	{/snippet}
+</Header>
 
 <Container>
-	<!-- TODO: convert button innerHTML string to full i18n value -->
-	<a href={localizeHref(`/decklist/create?side=corp`)}>Create new {m.corp()} decklist</a>
-	<a href={localizeHref(`/decklist/create?side=runner`)}>Create new {m.runner()} decklist</a>
-	<button>Import deck</button>
-
-	{#if page.data.decks.length > 0}
-		<ul>
-			{#each page.data.decks as deck}
-				<li>{deck.name}</li>
-			{/each}
-		</ul>
+	{#if data.tiles.length === 0}
+		<p class="empty">You have no decks yet.</p>
 	{:else}
-		<p>You have no decks yet.</p>
-		<Button href={localizeHref(`/decklist/create`)}>Create a deck</Button>
+		<Tiles tiles={data.tiles} />
 	{/if}
-
-	<p>{JSON.stringify(page)}</p>
 </Container>
+
+<style>
+	.empty {
+		margin: 0;
+		padding-block: 3rem;
+	}
+</style>
