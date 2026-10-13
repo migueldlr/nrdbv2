@@ -1,8 +1,11 @@
 import { writable } from 'svelte/store';
 import type { Snippet } from 'svelte';
 import type { Card, Printing } from './types';
+import type { SearchMode } from './search';
 
 export const search_query = writable<string>('');
+
+export const search_mode = writable<SearchMode>('interpreted');
 
 export const tooltip = writable<{
 	element: HTMLElement | null;

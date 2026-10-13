@@ -6,7 +6,7 @@ export const themeSelect = (page: Page) => page.locator('select:has(option[value
 export const searchInput = (page: Page) => page.locator('input[placeholder="Search"]');
 export const searchDropdown = (page: Page) => page.locator('.search-dropdown');
 export const interpretedSearchCheckbox = (page: Page) =>
-	searchDropdown(page).getByLabel('Interpreted');
+	page.locator('.site-footer').getByLabel('Interpreted');
 // TODO: abstract this so we're not directly checking OPFS
 export const waitForSearchDatabase = (page: Page) =>
 	page.waitForFunction(

@@ -136,12 +136,9 @@ test.describe('Search input', () => {
 		await expect(searchDropdown(page)).toBeVisible();
 	});
 
-	test('Dropdown shows interpreted checkbox unchecked by default', async ({ page }) => {
-		await searchInput(page).fill('archive');
-
-		await expect(searchDropdown(page)).toBeVisible();
+	test('Footer shows interpreted checkbox checked by default', async ({ page }) => {
 		await expect(interpretedSearchCheckbox(page)).toBeVisible();
-		await expect(interpretedSearchCheckbox(page)).not.toBeChecked();
+		await expect(interpretedSearchCheckbox(page)).toBeChecked();
 	});
 
 	test('Dropdown shows card results', async ({ page }) => {
@@ -151,7 +148,7 @@ test.describe('Search input', () => {
 		await expect(searchDropdown(page).locator('.card-grid-item a').first()).toBeVisible();
 	});
 
-	test('Switching to interpreted reruns the current query with one card grid visible', async ({
+	test('Switching to literal reruns the current query with one card grid visible', async ({
 		page
 	}) => {
 		await waitForSearchDatabase(page);
@@ -159,9 +156,12 @@ test.describe('Search input', () => {
 		await expect(searchDropdown(page)).toBeVisible();
 		await expect(searchDropdown(page).locator('.card-grid')).toHaveCount(1);
 
-		await interpretedSearchCheckbox(page).check();
+		// Toggling in the footer blurs the input, so reopen the dropdown afterwards
+		await interpretedSearchCheckbox(page).uncheck();
+		await expect(interpretedSearchCheckbox(page)).not.toBeChecked();
+		await searchInput(page).click();
 
-		await expect(interpretedSearchCheckbox(page)).toBeChecked();
+		await expect(searchDropdown(page)).toBeVisible();
 		await expect(searchDropdown(page).locator('.card-grid')).toHaveCount(1);
 		await expect(searchDropdown(page).locator('.card-grid-item a').first()).toBeVisible();
 	});
@@ -219,12 +219,12 @@ test.describe('Search input', () => {
 		page
 	}) => {
 		await waitForSearchDatabase(page);
+		await interpretedSearchCheckbox(page).uncheck();
 		await searchInput(page).fill('Sure Gamble');
 		await expect(searchDropdown(page).locator('.card-grid-item a').first()).toBeVisible();
 
 		await searchInput(page).fill('zzz:foo');
 
-		await expect(interpretedSearchCheckbox(page)).not.toBeChecked();
 		await expect(searchDropdown(page).locator('.card-grid-item')).toHaveCount(0);
 		await expect(searchDropdown(page)).not.toContainText(/Unknown keyword|Failed to load/i);
 	});

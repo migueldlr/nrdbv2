@@ -2,7 +2,7 @@
 	import { APP_NAME, NAVIGATION_GROUPS } from '$lib/constants';
 	import Logo from '$lib/components/Logo.svelte';
 	import { locales, getLocale, setLocale, localizeHref } from '$lib/paraglide/runtime.js';
-	import { theme as current_theme } from '$lib/store';
+	import { theme as current_theme, search_mode } from '$lib/store';
 	import { page } from '$app/state';
 	import { isCurrentPath } from '$lib/utils';
 
@@ -46,6 +46,17 @@
 						</option>
 					{/each}
 				</select>
+
+				<label class="site-footer__toggle">
+					<input
+						type="checkbox"
+						checked={$search_mode === 'interpreted'}
+						onchange={(e) => {
+							$search_mode = e.currentTarget.checked ? 'interpreted' : 'literal';
+						}}
+					/>
+					Interpreted
+				</label>
 			</div>
 		</div>
 
@@ -99,6 +110,12 @@
 		flex-direction: row;
 		gap: 2rem;
 		margin-block-start: 1rem;
+	}
+
+	.site-footer__toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.site-footer__nav {
