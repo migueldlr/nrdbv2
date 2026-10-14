@@ -1,4 +1,5 @@
 import { SvelteKitAuth } from '@auth/sveltekit';
+import { createAuthCallbacks } from '$lib/server/auth_callbacks';
 import {
 	AUTH_KEYCLOAK_ISSUER,
 	AUTH_CLIENT_NAME,
@@ -18,18 +19,9 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 			clientSecret: AUTH_SECRET
 		}
 	],
-	callbacks: {
-		async jwt({ token, account }) {
-			if (account) {
-				token.idToken = account.id_token;
-				token.accessToken = account.access_token;
-			}
-			return token;
-		},
-		async session({ session, token }) {
-			session.accessToken = token.accessToken as string;
-			session.idToken = token.idToken as string;
-			return session;
-		}
-	}
+	callbacks: createAuthCallbacks({
+		issuer: AUTH_KEYCLOAK_ISSUER,
+		clientId: AUTH_CLIENT_ID,
+		clientSecret: AUTH_SECRET
+	})
 });

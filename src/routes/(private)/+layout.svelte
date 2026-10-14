@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, type Snippet } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { signIn } from '@auth/sveltekit/client';
 
@@ -9,8 +9,8 @@
 
 	let { children }: Props = $props();
 
-	onMount(() => {
-		if (!page.data.session) {
+	$effect(() => {
+		if (!page.data.session || page.data.session.error === 'RefreshTokenError') {
 			signIn('nsg-keycloak');
 		}
 	});

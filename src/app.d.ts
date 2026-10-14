@@ -14,6 +14,7 @@ declare module '@auth/sveltekit' {
 	interface Session {
 		accessToken?: string;
 		idToken?: string;
+		error?: 'RefreshTokenError';
 	}
 }
 
