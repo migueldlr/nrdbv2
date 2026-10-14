@@ -1,19 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthCallbacks } from './auth_callbacks';
+import { createAuthCallbacks, EXPIRY_BUFFER_SECONDS } from './auth_callbacks';
 
-const now = 1_800_000_000;
+const nowSeconds = 1_800_000_000;
+const tokenLifetimeSeconds = 300;
 const oldToken = {
 	sub: 'test-user',
 	accessToken: 'old-access',
 	refreshToken: 'old-refresh',
 	idToken: 'old-id',
-	expiresAt: now - 1
+	expiresAt: nowSeconds - 1
 };
 const refreshed = {
 	access_token: 'new-access',
 	refresh_token: 'new-refresh',
 	id_token: 'new-id',
-	expires_in: 300
+	expires_in: tokenLifetimeSeconds
 };
 const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
 
@@ -41,7 +42,7 @@ function setup(fetcher = vi.fn().mockResolvedValue(response(refreshed))) {
 
 beforeEach(() => {
 	vi.useFakeTimers();
-	vi.setSystemTime(now * 1000);
+	vi.setSystemTime(nowSeconds * 1000);
 });
 afterEach(() => {
 	vi.clearAllTimers();
@@ -58,22 +59,22 @@ describe('Keycloak token refresh', () => {
 					access_token: 'login-access',
 					refresh_token: 'login-refresh',
 					id_token: 'login-id',
-					expires_at: now + 300
+					expires_at: nowSeconds + tokenLifetimeSeconds
 				}
 			)
 		).toMatchObject({
 			accessToken: 'login-access',
 			refreshToken: 'login-refresh',
 			idToken: 'login-id',
-			expiresAt: now + 300,
+			expiresAt: nowSeconds + tokenLifetimeSeconds,
 			error: undefined
 		});
 		expect(fetcher).not.toHaveBeenCalled();
 	});
 
-	it('reuses an access token outside the expiry buffer', async () => {
+	it('reuses an access token that expires more than thirty seconds from now', async () => {
 		const { run, fetcher } = setup();
-		const token = { ...oldToken, expiresAt: now + 31 };
+		const token = { ...oldToken, expiresAt: nowSeconds + EXPIRY_BUFFER_SECONDS + 1 };
 		expect(await run(token)).toEqual(token);
 		expect(fetcher).not.toHaveBeenCalled();
 	});
@@ -86,7 +87,7 @@ describe('Keycloak token refresh', () => {
 			accessToken: 'new-access',
 			refreshToken: 'new-refresh',
 			idToken: 'new-id',
-			expiresAt: now + 300
+			expiresAt: nowSeconds + tokenLifetimeSeconds
 		});
 		expect(token?.error).toBeUndefined();
 		const [url, options] = fetcher.mock.calls[0];
@@ -102,15 +103,18 @@ describe('Keycloak token refresh', () => {
 
 	it('refreshes within thirty seconds of expiry', async () => {
 		const { run, fetcher } = setup();
-		expect(await run({ ...oldToken, expiresAt: now + 30 })).toMatchObject({
-			accessToken: 'new-access'
-		});
+		const token = { ...oldToken, expiresAt: nowSeconds + EXPIRY_BUFFER_SECONDS };
+		expect(await run(token)).toMatchObject({ accessToken: 'new-access' });
 		expect(fetcher).toHaveBeenCalledTimes(1);
 	});
 
 	it('preserves refresh and ID tokens when Keycloak does not replace them', async () => {
 		const { run } = setup(
-			vi.fn().mockResolvedValue(response({ access_token: 'new-access', expires_in: 300 }))
+			vi
+				.fn()
+				.mockResolvedValue(
+					response({ access_token: 'new-access', expires_in: tokenLifetimeSeconds })
+				)
 		);
 		expect(await run()).toMatchObject({
 			accessToken: 'new-access',

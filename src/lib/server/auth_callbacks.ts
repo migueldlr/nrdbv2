@@ -17,7 +17,7 @@ interface Options {
 	fetcher?: typeof fetch;
 }
 
-const EXPIRY_BUFFER_SECONDS = 30;
+export const EXPIRY_BUFFER_SECONDS = 30;
 
 async function refreshAccessToken(
 	{ issuer, clientId, clientSecret, fetcher = fetch }: Options,
