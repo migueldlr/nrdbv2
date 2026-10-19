@@ -92,28 +92,34 @@
 		grouped_cards.some((group) => group.data.some((card) => (card_slots[card.id] ?? 0) > 0))
 	);
 
-	let search_results = $state<{ query: string; cards: TCard[] }>({ query: '', cards: [] });
-
-	let search_request = 0;
+	let search_results = $state<TCard[]>([]);
+	let has_current_results = $state(true);
 
 	const full_query = $derived(
 		[interpreted_query.expression, format_clause].filter(Boolean).join(' ')
 	);
 
 	$effect(() => {
-		const request = ++search_request;
 		const query = full_query;
 
 		if (query.length === 0) {
-			search_results = { query: '', cards: side_cards };
+			search_results = side_cards;
+			has_current_results = true;
 			return;
 		}
 
+		let cancelled = false;
+		has_current_results = false;
+
 		searchCards(query, { side }).then(({ cards, error }) => {
-			if (error === null && request === search_request) {
-				search_results = { query, cards };
-			}
+			if (cancelled || error) return;
+			search_results = cards;
+			has_current_results = true;
 		});
+
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	const on_toggle_faction_change = (faction_id: FactionIds) => {
@@ -194,9 +200,9 @@
 
 	const on_search_submit = (event: SubmitEvent) => {
 		event.preventDefault();
-		if (search_results.query !== full_query) return;
+		if (!has_current_results) return;
 
-		const first = search_results.cards[0];
+		const first = search_results[0];
 		if (!first) return;
 
 		open_card_modal(first);
@@ -267,11 +273,11 @@
 			</Toolbar>
 
 			<DeckBuilderSearchResults
-				cards={search_results.cards}
+				cards={search_results}
 				bind:deck
 				on_open_card={open_card_modal}
 			/>
-			{#if search_results.cards.length === 0}
+			{#if search_results.length === 0}
 				<p class="builder__empty">No cards found</p>
 			{/if}
 		{:else if active_tab === 'Notes'}
