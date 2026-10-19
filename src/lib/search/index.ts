@@ -1,6 +1,6 @@
 import { sql } from '$lib/sqlite';
 import { interpretSearch } from '$lib/search/interpret';
-import { translateToQuery } from '$lib/search/translate';
+import { translateToQuery, type TranslateOptions } from '$lib/search/translate';
 import { populateDynamicVocab, type VocabOption } from '$lib/search/vocabulary';
 import { adaptCard } from '$lib/adapter';
 import type { Card } from '$lib/api.types';
@@ -8,11 +8,8 @@ import type { UnifiedCardRow } from '$lib/sqlite.types';
 
 export type SearchMode = 'literal' | 'interpreted';
 
-export interface SearchCardsOptions {
-	limit?: number;
+export interface SearchCardsOptions extends TranslateOptions {
 	mode?: SearchMode;
-	// Extra filter clause ANDed with the expression, e.g. a side filter.
-	constraint?: { clause: string; params: readonly unknown[] };
 }
 
 // Card search runs in four steps: optionally interpret -> translate -> run -> adapt.
@@ -20,11 +17,11 @@ export async function searchCards(
 	input: string,
 	options: SearchCardsOptions = {}
 ): Promise<{ cards: Card[]; error: Error | null }> {
-	const { mode = 'literal' } = options;
+	const { mode = 'literal', ...translate_options } = options;
 	// 1. expression: literal NRDB syntax or natural-language words -> NRDB search expression
 	const expression = mode === 'interpreted' ? interpretSearch(input) : input;
 	// 2. translate: expression -> SQL
-	const { sql: text, params, error } = translateToQuery(expression, options);
+	const { sql: text, params, error } = translateToQuery(expression, translate_options);
 	if (error || !text) {
 		return { cards: [], error };
 	}

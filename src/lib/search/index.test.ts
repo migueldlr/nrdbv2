@@ -66,9 +66,7 @@ describe('searchCards', () => {
 		await searchCards('shaper consoles', { mode: 'interpreted' });
 
 		expect(interpretSearchMock).toHaveBeenCalledWith('shaper consoles');
-		expect(translateToQueryMock).toHaveBeenCalledWith('f:shaper s:console', {
-			mode: 'interpreted'
-		});
+		expect(translateToQueryMock).toHaveBeenCalledWith('f:shaper s:console', {});
 	});
 
 	it('returns empty cards and the internal error for invalid literal syntax', async () => {
