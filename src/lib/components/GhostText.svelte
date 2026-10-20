@@ -97,7 +97,7 @@
 	.ghost-input input {
 		box-sizing: border-box;
 		width: 100%;
-		padding: 0.5rem;
+		padding: 0.375rem 0.5rem;
 		padding-left: 2.5rem;
 		border: 1px solid #ccc;
 		font-size: var(--font-size-base);
@@ -110,7 +110,7 @@
 		position: absolute;
 		inset: 0;
 		border: 1px solid transparent;
-		padding: 0.5rem;
+		padding: 0.375rem 0.5rem;
 		padding-left: 2.5rem;
 		font-size: var(--font-size-base);
 		line-height: var(--leading-body);
