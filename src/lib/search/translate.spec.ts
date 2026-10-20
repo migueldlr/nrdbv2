@@ -100,3 +100,23 @@ describe('translateToQuery constraints', () => {
 		expect(result.params).toEqual(['runner', 101]);
 	});
 });
+
+describe('translateToQuery side', () => {
+	it('ANDs an exact side match onto the expression', () => {
+		const result = translateToQuery('corroder', { side: 'runner' });
+		expect(result.error).toBeNull();
+		expect(result.sql).toBe(
+			expectedSql(
+				'(lower(unified_cards.stripped_title) LIKE ?) AND (unified_cards.side_id = ?)'
+			)
+		);
+		expect(result.params).toEqual(['%corroder%', 'runner']);
+	});
+
+	it('selects the whole side when the query is blank', () => {
+		const result = translateToQuery('', { side: 'corp' });
+		expect(result.error).toBeNull();
+		expect(result.sql).toBe(expectedSql('unified_cards.side_id = ?'));
+		expect(result.params).toEqual(['corp']);
+	});
+});

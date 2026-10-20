@@ -1,4 +1,5 @@
 import { CardSearchQueryBuilder } from '$lib/search_grammar_and_builder';
+import type { SidesIds } from '$lib/types';
 
 export interface CardQuery {
 	sql: string | null;
@@ -8,13 +9,14 @@ export interface CardQuery {
 
 export interface TranslateOptions {
 	limit?: number;
+	side?: SidesIds;
 	constraint?: { clause: string; params: readonly unknown[] };
 }
 
 // Translate an NRDB search expression into SQL.
 export function translateToQuery(
 	query: string,
-	{ limit, constraint }: TranslateOptions = {}
+	{ limit, side, constraint }: TranslateOptions = {}
 ): CardQuery {
 	let builder: CardSearchQueryBuilder | null = null;
 
@@ -31,7 +33,7 @@ export function translateToQuery(
 		if (builder.parse_error) {
 			return { sql: null, params: [], error: builder.parse_error };
 		}
-	} else if (!constraint) {
+	} else if (!side && !constraint) {
 		return { sql: null, params: [], error: null };
 	}
 
@@ -41,6 +43,10 @@ export function translateToQuery(
 	if (builder) {
 		clauses.push(builder.where);
 		params.push(...builder.where_values);
+	}
+	if (side) {
+		clauses.push('unified_cards.side_id = ?');
+		params.push(side);
 	}
 	if (constraint) {
 		clauses.push(constraint.clause);

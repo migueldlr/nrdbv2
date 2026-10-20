@@ -109,12 +109,7 @@
 			return;
 		}
 
-		searchCards(query, {
-			constraint: {
-				clause: 'unified_cards.side_id = ?',
-				params: [side]
-			}
-		}).then(({ cards, error }) => {
+		searchCards(query, { side }).then(({ cards, error }) => {
 			if (error === null && request === search_request) {
 				search_results = { query, cards };
 			}
