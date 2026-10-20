@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { SidesIds, FactionIds, CardTypeIds, Card as TCard, CardGroup } from '$lib/types';
-	import { card_types, faction_name, formats as i18n_formats } from '$lib/i18n';
+	import { card_types, faction_name, format_toggle_options } from '$lib/i18n';
 	import { CORP_CARD_TYPES, RUNNER_CARD_TYPES } from '$lib/constants';
-	import { DECK_FORMATS, type ActiveCardPoolIds, type DeckFormat } from '$lib/deck_formats';
+	import type { ActiveCardPoolIds, DeckFormat } from '$lib/deck_formats';
 	import { collectFactionsInActiveCardPool } from '$lib/identities';
 	import { group_cards_by_type } from '$lib/utils';
 	import { searchCards } from '$lib/search';
@@ -77,11 +77,6 @@
 		}))
 	);
 
-	const format_toggles: ToolbarOption<DeckFormat>[] = DECK_FORMATS.map((format_option) => ({
-		value: format_option,
-		label: i18n_formats[format_option]
-	}));
-
 	const format_clause = $derived(format === 'all' ? '' : `format:${format}`);
 
 	let grouped_cards = $derived<CardGroup[]>(group_cards_by_type(side_cards));
@@ -144,7 +139,7 @@
 	let toolbar_groups = $derived<ToolbarGroup[]>([
 		{
 			type: 'single',
-			options: format_toggles,
+			options: format_toggle_options,
 			label: m.format(),
 			value: format,
 			onValueChange: (value) => on_select_format(value as DeckFormat)

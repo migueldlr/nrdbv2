@@ -1,5 +1,5 @@
 import { m } from './paraglide/messages.js';
-import type { DeckFormat } from './deck_formats';
+import { DECK_FORMATS, type DeckFormat } from './deck_formats';
 import type { FactionIds, CardTypeIds, Publishers, CardSubTypeIds } from './types.js';
 
 export const factions: Record<FactionIds, string> = {
@@ -26,6 +26,11 @@ export const formats: Record<DeckFormat, string> = {
 	eternal: m.eternal(),
 	all: 'All'
 };
+
+export const format_toggle_options = DECK_FORMATS.map((value) => ({
+	value,
+	label: formats[value]
+}));
 
 export const card_types: Record<CardTypeIds, string> = {
 	agenda: m.agenda(),

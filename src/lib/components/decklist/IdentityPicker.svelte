@@ -1,10 +1,9 @@
 <script lang="ts">
 	import type { FactionIds, SidesIds } from '$lib/types';
-	import { DECK_FORMATS, type DeckFormat } from '$lib/deck_formats';
 	import { decklistNav, type DecklistCatalog, type DecklistParams } from '$lib/decklist_params';
 	import { filterFactionGroups, groupIdentitiesByFaction } from '$lib/identities';
 	import { m } from '$lib/paraglide/messages.js';
-	import { formats } from '$lib/i18n';
+	import { format_toggle_options } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 	import CardImage from '$lib/components/card/CardImage.svelte';
 	import ToggleGroup, { type ToggleOption } from '$lib/components/ui/ToggleGroup.svelte';
@@ -26,11 +25,6 @@
 		{ value: 'corp', label: m.corp() },
 		{ value: 'runner', label: m.runner() }
 	];
-
-	const formatToggles: ToggleOption<DeckFormat>[] = DECK_FORMATS.map((formatOption) => ({
-		value: formatOption,
-		label: formats[formatOption]
-	}));
 
 	let availableFactions = $derived(groupIdentitiesByFaction(catalog, side, format));
 
@@ -58,7 +52,7 @@
 		/>
 
 		<ToggleGroup
-			options={formatToggles}
+			options={format_toggle_options}
 			label={m.format()}
 			size="sm"
 			selected={format}
