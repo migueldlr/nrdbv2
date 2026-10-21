@@ -61,6 +61,7 @@
 			active_card_pool_ids={catalog.active_card_pool_ids}
 			format={selected.format}
 			on_select_format={decklistNav.selectFormat}
+			on_select_identity={decklistNav.selectIdentity}
 		/>
 	{:else}
 		<IdentityPicker {catalog} {selected} />

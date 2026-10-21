@@ -1,32 +1,31 @@
 <script lang="ts">
 	import type { Card } from '$lib/types';
-	import type { CardSlots } from './card_slots';
+	import { isIdentity, type CardSlots } from './card_slots';
 	import { card_types, factions as i18n_factions } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 	import Influence from '$lib/components/Influence.svelte';
 	import Button from '../ui/Button.svelte';
+	import IdentitySelect from './IdentitySelect.svelte';
 
 	interface Props {
 		readonly cards: readonly Card[];
 		readonly deck: CardSlots;
+		readonly identity: Card['id'];
 		readonly on_open_card: (card: Card) => void;
+		readonly on_set_quantity: (card: Card, quantity: number) => void;
+		readonly on_select_identity: (card: Card) => void;
 	}
 
-	let { cards, deck = $bindable(), on_open_card }: Props = $props();
+	let {
+		cards,
+		deck,
+		identity,
+		on_open_card,
+		on_set_quantity: set_quantity,
+		on_select_identity
+	}: Props = $props();
 
 	const get_quantity = (card: Card): number => deck[card.id] ?? 0;
-
-	const set_quantity = (card: Card, quantity: number) => {
-		const next = { ...deck };
-
-		if (quantity <= 0) {
-			delete next[card.id];
-		} else {
-			next[card.id] = Math.min(card.attributes.deck_limit, quantity);
-		}
-
-		deck = next;
-	};
 
 	const increment = (card: Card) => {
 		set_quantity(card, get_quantity(card) + 1);
@@ -52,24 +51,34 @@
 		{#each cards as result (result.id)}
 			<tr>
 				<td>
-					<span class="builder__quantity">
-						<Button size="sm" onclick={() => decrement(result)}>-</Button>
-						<input
-							type="number"
-							min="0"
-							max={result.attributes.deck_limit}
-							value={get_quantity(result)}
-							oninput={(event) =>
-								set_quantity(
-									result,
-									Number.parseInt(
-										(event.currentTarget as HTMLInputElement).value,
-										10
-									) || 0
-								)}
-						/>
-						<Button size="sm" onclick={() => increment(result)}>+</Button>
-					</span>
+					{#if isIdentity(result)}
+						<span class="builder__quantity">
+							<IdentitySelect
+								class="builder__identity"
+								selected={result.id === identity}
+								onselect={() => on_select_identity(result)}
+							/>
+						</span>
+					{:else}
+						<span class="builder__quantity">
+							<Button size="sm" onclick={() => decrement(result)}>-</Button>
+							<input
+								type="number"
+								min="0"
+								max={result.attributes.deck_limit}
+								value={get_quantity(result)}
+								oninput={(event) =>
+									set_quantity(
+										result,
+										Number.parseInt(
+											(event.currentTarget as HTMLInputElement).value,
+											10
+										) || 0
+									)}
+							/>
+							<Button size="sm" onclick={() => increment(result)}>+</Button>
+						</span>
+					{/if}
 				</td>
 				<td>
 					<button
@@ -123,12 +132,22 @@
 <style>
 	.builder__quantity {
 		display: inline-grid;
-		grid-template-columns: auto 3rem auto;
+		grid-template-columns: 2rem 3rem 2rem;
 		align-items: center;
 		gap: 0.25rem;
 	}
 
+	.builder__quantity :global(.button) {
+		width: 100%;
+		padding-inline: 0;
+	}
+
+	.builder__quantity :global(.builder__identity) {
+		grid-column: 1 / -1;
+	}
+
 	.builder__quantity input {
+		box-sizing: border-box;
 		width: 100%;
 		text-align: center;
 	}

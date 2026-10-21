@@ -23,8 +23,9 @@
 	} from '../ui/Toolbar.svelte';
 	import DeckBuilderSearchResults from './DeckBuilderSearchResults.svelte';
 	import CardQuantity from './CardQuantity.svelte';
+	import IdentitySelect from './IdentitySelect.svelte';
 	import Grid from './Grid.svelte';
-	import { setCardSlot, type CardSlots } from './card_slots';
+	import { isIdentity, setCardSlot, type CardSlots } from './card_slots';
 
 	interface Props {
 		identity: TCard['id'];
@@ -32,9 +33,17 @@
 		active_card_pool_ids: ActiveCardPoolIds;
 		format: DeckFormat;
 		on_select_format: (format: DeckFormat) => void;
+		on_select_identity: (identity: TCard['id']) => void;
 	}
 
-	let { identity, side_cards, active_card_pool_ids, format, on_select_format }: Props = $props();
+	let {
+		identity,
+		side_cards,
+		active_card_pool_ids,
+		format,
+		on_select_format,
+		on_select_identity
+	}: Props = $props();
 
 	let search_query = $state('');
 	let active_tab = $state<'Build' | 'Notes' | 'Check' | 'History' | 'Collection' | 'Settings'>(
@@ -168,13 +177,24 @@
 		}
 	]);
 
-	const set_card_quantity = (card: TCard, quantity: number) => {
+	const update_card_quantity = (card: TCard, quantity: number) => {
 		deck = setCardSlot(deck, card, quantity);
+	};
+
+	const set_card_quantity = (card: TCard, quantity: number) => {
+		update_card_quantity(card, quantity);
+		search_query = '';
+		closeCardModal();
+	};
+
+	const select_identity = (card: TCard) => {
+		on_select_identity(card.id);
 		search_query = '';
 		closeCardModal();
 	};
 
 	const on_card_key_down = (event: KeyboardEvent, card: TCard) => {
+		if (isIdentity(card)) return;
 		if (event.metaKey || event.ctrlKey || event.altKey) return;
 		if (!/^[0-9]$/.test(event.key)) return;
 
@@ -205,11 +225,15 @@
 </script>
 
 {#snippet card_actions(card: TCard)}
-	<CardQuantity
-		{card}
-		quantity={deck[card.id] ?? 0}
-		onselect={(quantity) => set_card_quantity(card, quantity)}
-	/>
+	{#if isIdentity(card)}
+		<IdentitySelect selected={card.id === identity} onselect={() => select_identity(card)} />
+	{:else}
+		<CardQuantity
+			{card}
+			quantity={deck[card.id] ?? 0}
+			onselect={(quantity) => set_card_quantity(card, quantity)}
+		/>
+	{/if}
 {/snippet}
 
 <div class="builder">
@@ -269,8 +293,11 @@
 
 			<DeckBuilderSearchResults
 				cards={search_results}
-				bind:deck
+				{deck}
+				{identity}
 				on_open_card={open_card_modal}
+				on_set_quantity={update_card_quantity}
+				on_select_identity={select_identity}
 			/>
 			{#if search_results.length === 0}
 				<p class="builder__empty">No cards found</p>

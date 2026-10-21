@@ -2,6 +2,9 @@ import type { Card, Decklist } from '$lib/types';
 
 export type CardSlots = Readonly<Decklist['attributes']['card_slots']>;
 
+export const isIdentity = (card: Card): boolean =>
+	card.attributes.card_type_id.endsWith('_identity');
+
 export const setCardSlot = (card_slots: CardSlots, card: Card, quantity: number): CardSlots => {
 	const next = { ...card_slots };
 
