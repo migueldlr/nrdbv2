@@ -38,7 +38,8 @@
 										.attributes.title}
 									{#if card.attributes.faction_id !== identity!.attributes.faction_id && card.attributes.influence_cost !== null}
 										<Influence
-											count={card.attributes.influence_cost}
+											count={card.attributes.influence_cost *
+												decklist.attributes.card_slots[card.id]}
 											theme={card.attributes.faction_id}
 										/>
 									{/if}
