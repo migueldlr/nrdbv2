@@ -61,22 +61,19 @@
 						</span>
 					{:else}
 						<span class="builder__quantity">
-							<Button size="sm" onclick={() => decrement(result)}>-</Button>
-							<input
-								type="number"
-								min="0"
-								max={result.attributes.deck_limit}
-								value={get_quantity(result)}
-								oninput={(event) =>
-									set_quantity(
-										result,
-										Number.parseInt(
-											(event.currentTarget as HTMLInputElement).value,
-											10
-										) || 0
-									)}
-							/>
-							<Button size="sm" onclick={() => increment(result)}>+</Button>
+							{#if get_quantity(result) > 0}
+								<Button
+									size="sm"
+									color="secondary"
+									onclick={() => decrement(result)}
+								>
+									-
+								</Button>
+							{/if}
+							<span class="builder__count">{get_quantity(result)}</span>
+							<Button size="sm" color="secondary" onclick={() => increment(result)}>
+								+
+							</Button>
 						</span>
 					{/if}
 				</td>
@@ -132,24 +129,25 @@
 <style>
 	.builder__quantity {
 		display: inline-grid;
-		grid-template-columns: 2rem 3rem 2rem;
+		grid-template-columns: 1.75rem 1.5rem 1.75rem;
 		align-items: center;
 		gap: 0.25rem;
 	}
 
 	.builder__quantity :global(.button) {
 		width: 100%;
-		padding-inline: 0;
+		min-height: 1.75rem;
+		padding: 0;
 	}
 
 	.builder__quantity :global(.builder__identity) {
 		grid-column: 1 / -1;
 	}
 
-	.builder__quantity input {
-		box-sizing: border-box;
-		width: 100%;
+	.builder__count {
+		grid-column: 2;
 		text-align: center;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.builder__card-title {
