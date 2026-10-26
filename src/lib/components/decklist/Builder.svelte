@@ -257,6 +257,7 @@
 					class="builder__input"
 					type="search"
 					placeholder="Find a card or filter the list"
+					autocomplete="off"
 					bind:value={search_query}
 				/>
 			</form>
