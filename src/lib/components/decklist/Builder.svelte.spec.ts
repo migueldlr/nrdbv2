@@ -42,6 +42,7 @@ function renderBuilder(
 		active_card_pool_ids?: ActiveCardPoolIds;
 		format?: DeckFormat;
 		on_select_format?: (format: DeckFormat) => void;
+		on_select_identity?: (identity: string) => void;
 	},
 	options?: { wrapper: typeof CardModalHarness }
 ) {
@@ -50,6 +51,7 @@ function renderBuilder(
 		{
 			format: 'all',
 			on_select_format: () => {},
+			on_select_identity: () => {},
 			active_card_pool_ids,
 			...props
 		},
@@ -116,6 +118,48 @@ describe('Decklist Builder', () => {
 		await expect.element(page.getByRole('button', { name: 'Red Team, 1 copy' })).toBeVisible();
 		expect(page.getByText('No cards selected').query()).toBeNull();
 		await expect.element(page.getByRole('button', { name: 'Carnivore' })).toBeVisible();
+	});
+
+	it('selects another identity instead of adding it to the deck', async () => {
+		const on_select_identity = vi.fn();
+
+		await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, ESA, RED_TEAM],
+			on_select_identity
+		});
+
+		const zahyaRow = page.getByRole('row', { name: /Zahya/ });
+		const esaRow = page.getByRole('row', { name: /Esâ/ });
+		await expect.element(zahyaRow.getByRole('button', { name: 'Selected' })).toBeDisabled();
+		expect(zahyaRow.getByRole('spinbutton').query()).toBeNull();
+
+		await userEvent.click(esaRow.getByRole('button', { name: 'Select', exact: true }));
+		expect(on_select_identity).toHaveBeenCalledExactlyOnceWith(ESA.id);
+		await expect.element(page.getByText('No cards selected')).toBeVisible();
+	});
+
+	it('selects another identity from the card modal', async () => {
+		const on_select_identity = vi.fn();
+
+		await renderBuilder(
+			{
+				identity: ZAHYA.id,
+				side_cards: [ZAHYA, ESA],
+				on_select_identity
+			},
+			{ wrapper: CardModalHarness }
+		);
+
+		await userEvent.click(page.getByRole('button', { name: /Esâ/ }));
+
+		const dialog = page.getByRole('dialog', { name: /Esâ/ });
+		await expect.element(dialog).toBeVisible();
+		expect(dialog.getByRole('button', { name: '1' }).query()).toBeNull();
+
+		await userEvent.click(dialog.getByRole('button', { name: 'Select', exact: true }));
+		expect(on_select_identity).toHaveBeenCalledExactlyOnceWith(ESA.id);
+		expect(page.getByRole('dialog', { name: /Esâ/ }).query()).toBeNull();
 	});
 
 	it('shows the full card pool for a blank query and searches with the full grammar', async () => {
