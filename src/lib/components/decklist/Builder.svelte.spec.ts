@@ -102,6 +102,29 @@ describe('Decklist Builder', () => {
 		expect(page.getByRole('button', { name: /Red Team, \d cop/ }).query()).toBeNull();
 	});
 
+	it('summarizes card count and influence against the identity limits', async () => {
+		seedRows(CARNIVORE);
+
+		const { rerender } = await renderBuilder({
+			identity: ZAHYA.id,
+			side_cards: [ZAHYA, ESA, CARNIVORE]
+		});
+
+		const summary = page.getByRole('definition');
+		await expect.element(summary.nth(0)).toHaveTextContent('0 / 40 min');
+		await expect.element(summary.nth(1)).toHaveTextContent('0 / 15');
+
+		const carnivoreRow = page.getByRole('row', { name: /Carnivore/ });
+		await userEvent.click(carnivoreRow.getByRole('button', { name: '+' }));
+
+		await expect.element(summary.nth(0)).toHaveTextContent('1 / 40 min');
+		await expect.element(summary.nth(1)).toHaveTextContent('3 / 15');
+
+		await rerender({ identity: ESA.id });
+		await expect.element(summary.nth(1)).toHaveTextContent(/^0/);
+		expect(page.getByText('Agenda points').query()).toBeNull();
+	});
+
 	it('keeps the deck when the identity changes', async () => {
 		seedRows(RED_TEAM, CARNIVORE);
 

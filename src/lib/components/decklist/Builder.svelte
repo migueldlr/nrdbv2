@@ -25,7 +25,9 @@
 	import CardQuantity from './CardQuantity.svelte';
 	import IdentitySelect from './IdentitySelect.svelte';
 	import Grid from './Grid.svelte';
+	import DeckStats from './DeckStats.svelte';
 	import { isIdentity, setCardSlot, type CardSlots } from './card_slots';
+	import { computeDeckStats } from './deck_stats';
 
 	interface Props {
 		identity: TCard['id'];
@@ -89,6 +91,10 @@
 	let grouped_cards = $derived<CardGroup[]>(group_cards_by_type(side_cards));
 
 	let card_slots = $derived<CardSlots>(deck);
+
+	let deck_stats = $derived(
+		identity_card ? computeDeckStats(identity_card, side_cards, card_slots) : null
+	);
 
 	let has_cards = $derived(
 		grouped_cards.some((group) => group.data.some((card) => (card_slots[card.id] ?? 0) > 0))
@@ -246,6 +252,12 @@
 				</div>
 			{/if}
 
+			{#if deck_stats}
+				<div class="builder__stats">
+					<DeckStats stats={deck_stats} />
+				</div>
+			{/if}
+
 			{#if has_cards}
 				<Grid groups={grouped_cards} cardSlots={card_slots} />
 			{:else}
@@ -338,6 +350,10 @@
 	.builder__summary__sticky {
 		position: sticky;
 		top: 1rem;
+	}
+
+	.builder__stats {
+		margin-block: 1rem;
 	}
 
 	.builder__empty {
