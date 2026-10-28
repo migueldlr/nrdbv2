@@ -20,7 +20,7 @@ export const agendaPointRange = (deck_size: number): AgendaPointRange => {
 	return { min, max: min + 1 };
 };
 
-const influenceFor = (identity: Card, card: Card): number =>
+export const influenceFor = (identity: Card, card: Card): number =>
 	card.attributes.faction_id === identity.attributes.faction_id
 		? 0
 		: (card.attributes.influence_cost ?? 0);

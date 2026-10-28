@@ -6,6 +6,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import Influence from '$lib/components/Influence.svelte';
 	import { localizeHref } from '$lib/paraglide/runtime';
+	import { influenceFor } from './deck_stats';
 
 	interface Props {
 		decklist: Decklist;
@@ -32,13 +33,14 @@
 				<article>
 					<ul>
 						{#each group.data as card (card.id)}
+							{@const influence = influenceFor(identity!, card)}
 							<li>
 								<a href={localizeHref(`/card/${card.id}`)} use:tooltip={card}>
 									{decklist.attributes.card_slots[card.id]}&times; {card
 										.attributes.title}
-									{#if card.attributes.faction_id !== identity!.attributes.faction_id && card.attributes.influence_cost !== null}
+									{#if influence > 0}
 										<Influence
-											count={card.attributes.influence_cost *
+											count={influence *
 												decklist.attributes.card_slots[card.id]}
 											theme={card.attributes.faction_id}
 										/>
