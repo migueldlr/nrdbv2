@@ -6,8 +6,7 @@
 	import { decklistNav, readParams } from '$lib/decklist_params';
 	import IdentityPicker from '$lib/components/decklist/IdentityPicker.svelte';
 	import DecklistBuilder from '$lib/components/decklist/Builder.svelte';
-	import Icon from '$lib/components/Icon.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
+	import DeckBar from '$lib/components/decklist/DeckBar.svelte';
 	import type { Card, FactionIds } from '$lib/types';
 
 	interface Props {
@@ -36,19 +35,7 @@
 </script>
 
 {#if identity}
-	<Header title={identity.attributes.title} subtitle="">
-		{#snippet icon()}
-			{#if faction}
-				<Icon name={faction} size="xl" />
-			{/if}
-		{/snippet}
-
-		{#snippet actions()}
-			<Button color="ghost" size="sm" onclick={decklistNav.clearIdentity}>
-				Change identity
-			</Button>
-		{/snippet}
-	</Header>
+	<DeckBar on_change_identity={decklistNav.clearIdentity} />
 {:else}
 	<Header title="Build a new deck" subtitle="" />
 {/if}
