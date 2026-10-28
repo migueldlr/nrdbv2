@@ -30,7 +30,7 @@
 	import { computeDeckStats } from './deck_stats';
 
 	interface Props {
-		identity: TCard['id'];
+		identity: TCard;
 		side_cards: TCard[];
 		active_card_pool_ids: ActiveCardPoolIds;
 		format: DeckFormat;
@@ -56,11 +56,7 @@
 
 	let deck = $state<CardSlots>({});
 
-	let identity_card = $derived<TCard | undefined>(
-		side_cards.find((card: TCard) => card.id === identity)
-	);
-
-	let side = $derived<SidesIds>(identity_card?.attributes.side_id ?? 'corp');
+	let side = $derived<SidesIds>(identity.attributes.side_id);
 
 	let interpreted_query = $derived(interpretQuery(search_query));
 	let active_filters = $derived(collectActiveFilters(interpreted_query));
@@ -92,9 +88,7 @@
 
 	let card_slots = $derived<CardSlots>(deck);
 
-	let deck_stats = $derived(
-		identity_card ? computeDeckStats(identity_card, side_cards, card_slots) : null
-	);
+	let deck_stats = $derived(computeDeckStats(identity, side_cards, card_slots));
 
 	let has_cards = $derived(
 		grouped_cards.some((group) => group.data.some((card) => (card_slots[card.id] ?? 0) > 0))
@@ -243,20 +237,16 @@
 	<div class="builder__summary">
 		<div class="builder__summary__sticky">
 			<h2>Decklist builder</h2>
-			{#if identity_card}
-				<p>
-					Decklist for <strong>{identity_card.attributes.title}</strong>
-				</p>
-				<div style="width: 50%;">
-					<CardImage card={identity_card} />
-				</div>
-			{/if}
+			<p>
+				Decklist for <strong>{identity.attributes.title}</strong>
+			</p>
+			<div style="width: 50%;">
+				<CardImage card={identity} />
+			</div>
 
-			{#if deck_stats}
-				<div class="builder__stats">
-					<DeckStats stats={deck_stats} />
-				</div>
-			{/if}
+			<div class="builder__stats">
+				<DeckStats stats={deck_stats} />
+			</div>
 
 			{#if has_cards}
 				<Grid groups={grouped_cards} cardSlots={card_slots} />

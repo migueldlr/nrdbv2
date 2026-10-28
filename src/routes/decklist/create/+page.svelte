@@ -56,7 +56,7 @@
 <Container>
 	{#if identity && faction}
 		<DecklistBuilder
-			identity={identity.id}
+			{identity}
 			side_cards={data.side_cards ?? []}
 			active_card_pool_ids={catalog.active_card_pool_ids}
 			format={selected.format}

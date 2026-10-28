@@ -37,7 +37,7 @@ const active_card_pool_ids: ActiveCardPoolIds = {
 
 function renderBuilder(
 	props: {
-		identity: string;
+		identity: Card;
 		side_cards: Card[];
 		active_card_pool_ids?: ActiveCardPoolIds;
 		format?: DeckFormat;
@@ -78,7 +78,7 @@ describe('Decklist Builder', () => {
 		seedRows(RED_TEAM);
 
 		await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, RED_TEAM]
 		});
 
@@ -106,7 +106,7 @@ describe('Decklist Builder', () => {
 		seedRows(CARNIVORE);
 
 		const { rerender } = await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, ESA, CARNIVORE]
 		});
 
@@ -120,7 +120,7 @@ describe('Decklist Builder', () => {
 		await expect.element(summary.nth(0)).toHaveTextContent('1 / 40 min');
 		await expect.element(summary.nth(1)).toHaveTextContent('3 / 15');
 
-		await rerender({ identity: ESA.id });
+		await rerender({ identity: ESA });
 		await expect.element(summary.nth(1)).toHaveTextContent(/^0/);
 		expect(page.getByText('Agenda points').query()).toBeNull();
 	});
@@ -129,14 +129,14 @@ describe('Decklist Builder', () => {
 		seedRows(RED_TEAM, CARNIVORE);
 
 		const { rerender } = await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, ESA, RED_TEAM, CARNIVORE]
 		});
 
 		await userEvent.click(redTeamRow.getByRole('button', { name: '+' }));
 		await expect.element(page.getByRole('button', { name: 'Red Team, 1 copy' })).toBeVisible();
 
-		await rerender({ identity: ESA.id });
+		await rerender({ identity: ESA });
 
 		await expect.element(page.getByRole('button', { name: 'Red Team, 1 copy' })).toBeVisible();
 		expect(page.getByText('No cards selected').query()).toBeNull();
@@ -189,7 +189,7 @@ describe('Decklist Builder', () => {
 		seedRows(RED_TEAM);
 
 		await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
 		});
 
@@ -224,7 +224,7 @@ describe('Decklist Builder', () => {
 
 		await renderBuilder(
 			{
-				identity: ZAHYA.id,
+				identity: ZAHYA,
 				side_cards: [ZAHYA, RED_TEAM]
 			},
 			{ wrapper: CardModalHarness }
@@ -248,7 +248,7 @@ describe('Decklist Builder', () => {
 
 		await renderBuilder(
 			{
-				identity: ZAHYA.id,
+				identity: ZAHYA,
 				side_cards: [ZAHYA, RED_TEAM]
 			},
 			{ wrapper: CardModalHarness }
@@ -268,7 +268,7 @@ describe('Decklist Builder', () => {
 
 		await renderBuilder(
 			{
-				identity: ZAHYA.id,
+				identity: ZAHYA,
 				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
 			},
 			{ wrapper: CardModalHarness }
@@ -302,7 +302,7 @@ describe('Decklist Builder', () => {
 
 		await renderBuilder(
 			{
-				identity: ZAHYA.id,
+				identity: ZAHYA,
 				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
 			},
 			{ wrapper: CardModalHarness }
@@ -338,7 +338,7 @@ describe('Decklist Builder', () => {
 
 		await renderBuilder(
 			{
-				identity: ZAHYA.id,
+				identity: ZAHYA,
 				side_cards: [ZAHYA, RED_TEAM]
 			},
 			{ wrapper: CardModalHarness }
@@ -360,7 +360,7 @@ describe('Decklist Builder', () => {
 
 		await renderBuilder(
 			{
-				identity: ZAHYA.id,
+				identity: ZAHYA,
 				side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE]
 			},
 			{ wrapper: CardModalHarness }
@@ -390,7 +390,7 @@ describe('Decklist Builder', () => {
 
 		await renderBuilder(
 			{
-				identity: ZAHYA.id,
+				identity: ZAHYA,
 				side_cards: [ZAHYA, limited]
 			},
 			{ wrapper: CardModalHarness }
@@ -410,7 +410,7 @@ describe('Decklist Builder', () => {
 
 	it('synchronizes chips with natural-language input', async () => {
 		await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, SURE_GAMBLE]
 		});
 
@@ -463,7 +463,7 @@ describe('Decklist Builder', () => {
 
 	it('shows only the factions with cards in the selected format pool', async () => {
 		const { rerender } = await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, APEX, SURE_GAMBLE]
 		});
 
@@ -485,7 +485,7 @@ describe('Decklist Builder', () => {
 		const on_select_format = vi.fn();
 
 		await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE],
 			format: 'standard',
 			on_select_format
@@ -526,7 +526,7 @@ describe('Decklist Builder', () => {
 
 	it('uses toolbar arrow navigation without changing the selected format', async () => {
 		await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, RED_TEAM]
 		});
 
@@ -545,7 +545,7 @@ describe('Decklist Builder', () => {
 		seedRows(RED_TEAM);
 
 		await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, RED_TEAM],
 			format: 'eternal'
 		});
@@ -562,7 +562,7 @@ describe('Decklist Builder', () => {
 
 	it('shows the whole side pool without a format clause for the all format', async () => {
 		await renderBuilder({
-			identity: ZAHYA.id,
+			identity: ZAHYA,
 			side_cards: [ZAHYA, RED_TEAM, SURE_GAMBLE],
 			format: 'all'
 		});
