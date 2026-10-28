@@ -235,25 +235,29 @@
 
 <div class="builder">
 	<div class="builder__summary">
-		<div class="builder__summary__sticky">
-			<h2>Decklist builder</h2>
-			<p>
-				Decklist for <strong>{identity.attributes.title}</strong>
-			</p>
-			<div style="width: 50%;">
-				<CardImage card={identity} />
-			</div>
+		<div class="builder__identity-row">
+			<button
+				type="button"
+				class="builder__identity-card"
+				aria-haspopup="dialog"
+				aria-label={identity.attributes.title}
+				onclick={() => openCardModal(identity)}
+			>
+				<CardImage card={identity} href={null} />
+			</button>
 
-			<div class="builder__stats">
+			<div class="builder__identity">
+				<p class="builder__identity-name">{identity.attributes.title}</p>
+
 				<DeckStats stats={deck_stats} />
 			</div>
-
-			{#if has_cards}
-				<Grid groups={grouped_cards} cardSlots={card_slots} />
-			{:else}
-				<p class="builder__empty">No cards selected</p>
-			{/if}
 		</div>
+
+		{#if has_cards}
+			<Grid groups={grouped_cards} cardSlots={card_slots} />
+		{:else}
+			<p class="builder__empty">No cards selected</p>
+		{/if}
 	</div>
 
 	<div class="builder__search">
@@ -326,6 +330,7 @@
 <style>
 	.builder {
 		display: grid;
+		margin-block: 1rem 3rem;
 		gap: 2rem;
 		grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 	}
@@ -337,13 +342,42 @@
 		gap: 1rem;
 	}
 
-	.builder__summary__sticky {
+	.builder__summary {
 		position: sticky;
 		top: 1rem;
+		align-self: start;
 	}
 
-	.builder__stats {
-		margin-block: 1rem;
+	.builder__identity-row {
+		display: flex;
+		align-items: center;
+		gap: 1rem 1.5rem;
+	}
+
+	.builder__identity-card {
+		flex-shrink: 0;
+		inline-size: 6rem;
+		padding: 0;
+		border: 0;
+		border-radius: var(--card-radius);
+		background: transparent;
+		cursor: pointer;
+	}
+
+	.builder__identity-card:focus-visible {
+		outline: 3px solid currentColor;
+		outline-offset: 3px;
+	}
+
+	.builder__identity {
+		display: grid;
+		gap: 0.75rem;
+		min-inline-size: 0;
+	}
+
+	.builder__identity-name {
+		margin: 0;
+		font-weight: var(--font-weight-semibold);
 	}
 
 	.builder__empty {
