@@ -84,6 +84,7 @@ describe('Decklist Builder', () => {
 
 		const emptyState = page.getByText('No cards selected');
 		await expect.element(emptyState).toBeVisible();
+		expect(redTeamRow.getByRole('button', { name: '-' }).query()).toBeNull();
 
 		await userEvent.click(redTeamRow.getByRole('button', { name: '+' }));
 		const oneCopy = page.getByRole('button', { name: 'Red Team, 1 copy' });
@@ -99,6 +100,7 @@ describe('Decklist Builder', () => {
 		await userEvent.click(redTeamRow.getByRole('button', { name: '-' }));
 		await userEvent.click(redTeamRow.getByRole('button', { name: '-' }));
 		await expect.element(emptyState).toBeVisible();
+		await expect.element(redTeamRow.getByRole('button', { name: '-' })).not.toBeInTheDocument();
 		expect(page.getByRole('button', { name: /Red Team, \d cop/ }).query()).toBeNull();
 	});
 

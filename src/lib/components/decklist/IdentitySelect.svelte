@@ -10,12 +10,6 @@
 	let { selected, onselect, class: class_list = '' }: Props = $props();
 </script>
 
-<Button
-	size="sm"
-	class={class_list}
-	color={selected ? 'secondary' : 'primary'}
-	disabled={selected}
-	onclick={onselect}
->
+<Button size="sm" class={class_list} color="secondary" disabled={selected} onclick={onselect}>
 	{selected ? 'Selected' : 'Select'}
 </Button>
