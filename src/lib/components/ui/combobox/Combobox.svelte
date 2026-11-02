@@ -49,7 +49,7 @@
 
 	const candidates = $derived(results.filter((item) => !selected_ids.includes(item.id)));
 
-	const is_listbox_visible = $derived(open && has_query && candidates.length > 0);
+	const is_listbox_visible = $derived(open && has_query && candidates.length > 0 && !disabled);
 
 	$effect(() => {
 		const text = query.trim();
@@ -85,6 +85,12 @@
 		onchange(value.filter((selected) => selected.id !== item_id));
 		input_element?.focus();
 	}
+
+	function handle_keydown(event: KeyboardEvent) {
+		if (event.key === 'Backspace' && query === '' && value.length > 0) {
+			remove_item(value[value.length - 1].id);
+		}
+	}
 </script>
 
 <BitsCombobox.Root
@@ -110,6 +116,11 @@
 						open = true;
 						(props.oninput as (event: Event) => void)(event);
 					}}
+					onkeydown={(event) => {
+						handle_keydown(event);
+						(props.onkeydown as (event: KeyboardEvent) => void)(event);
+					}}
+					onclick={() => (open = true)}
 				/>
 			{/snippet}
 		</BitsCombobox.Input>

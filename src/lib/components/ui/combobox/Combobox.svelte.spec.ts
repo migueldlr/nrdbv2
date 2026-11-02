@@ -15,6 +15,7 @@ const search_items: ComboboxSearch<ComboboxItem> = (query) =>
 
 interface RenderOptions {
 	value?: ComboboxItem[];
+	disabled?: boolean;
 	search?: ComboboxSearch<ComboboxItem>;
 }
 
@@ -22,6 +23,7 @@ async function render_combobox(options: RenderOptions = {}) {
 	const onchange = vi.fn();
 	const { rerender } = await render(Combobox, {
 		value: options.value ?? [],
+		disabled: options.disabled,
 		onchange,
 		search: options.search ?? search_items,
 		label: 'Contains cards',
@@ -74,6 +76,16 @@ describe('Combobox', () => {
 		await expect.element(page.getByText('Carnivore')).toBeVisible();
 		await expect.element(page.getByRole('button', { name: 'Remove Carnivore' })).toBeVisible();
 		await userEvent.click(page.getByRole('button', { name: 'Remove Carnivore' }));
+
+		expect(onchange).toHaveBeenCalledWith([SURE_GAMBLE]);
+	});
+
+	it('removes the last chip with Backspace in the empty input', async () => {
+		const { onchange } = await render_combobox({ value: [SURE_GAMBLE, CARNIVORE] });
+
+		const input = page.getByRole('combobox', { name: 'Contains cards' });
+		await userEvent.click(input);
+		await userEvent.keyboard('{Backspace}');
 
 		expect(onchange).toHaveBeenCalledWith([SURE_GAMBLE]);
 	});
@@ -166,6 +178,36 @@ describe('Combobox', () => {
 		expect(limits).toEqual([10, 10]);
 	});
 
+	it('reopens the results when the input is clicked after Escape', async () => {
+		await render_combobox();
+
+		const input = page.getByRole('combobox', { name: 'Contains cards' });
+		await input.fill('car');
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+
+		await userEvent.keyboard('{Escape}');
+		await expect
+			.element(page.getByRole('option', { name: 'Carnivore' }))
+			.not.toBeInTheDocument();
+
+		await userEvent.click(input);
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+	});
+
+	it('keeps focus in the input when pressing inside the listbox', async () => {
+		await render_combobox();
+
+		const input = page.getByRole('combobox', { name: 'Contains cards' });
+		await input.fill('car');
+		const listbox = page.getByRole('listbox');
+		await expect.element(listbox).toBeVisible();
+
+		const pressed = listbox
+			.element()
+			.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+		expect(pressed).toBe(false);
+	});
+
 	it('does not search again when only the search function changes', async () => {
 		const { rerender } = await render_combobox();
 
@@ -176,5 +218,20 @@ describe('Combobox', () => {
 		await rerender({ search: next_search });
 		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
 		expect(next_search).not.toHaveBeenCalled();
+	});
+
+	it('hides the results and disables the input and chip buttons when disabled', async () => {
+		const { rerender } = await render_combobox({ value: [SURE_GAMBLE] });
+
+		const input = page.getByRole('combobox', { name: 'Contains cards' });
+		await input.fill('car');
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+
+		await rerender({ disabled: true });
+		await expect.element(page.getByRole('listbox')).not.toBeInTheDocument();
+		await expect.element(input).toBeDisabled();
+		await expect
+			.element(page.getByRole('button', { name: 'Remove Sure Gamble' }))
+			.toBeDisabled();
 	});
 });
