@@ -14,6 +14,7 @@
 	import { Combobox as BitsCombobox } from 'bits-ui';
 	import ComboboxChip from './ComboboxChip.svelte';
 	import ComboboxListbox from './ComboboxListbox.svelte';
+	import { untrack } from 'svelte';
 
 	interface Props {
 		value: T[];
@@ -40,6 +41,7 @@
 	let results = $state<T[]>([]);
 	let field_element = $state<HTMLDivElement | null>(null);
 	let input_element = $state<HTMLInputElement | null>(null);
+	let latest_request = 0;
 
 	const has_query = $derived(query.trim().length > 0);
 
@@ -51,13 +53,26 @@
 
 	$effect(() => {
 		const text = query.trim();
+		const request_id = ++latest_request;
 
 		if (!text) {
 			results = [];
 			return;
 		}
 
-		void Promise.resolve(search(text, max_results)).then((found) => (results = found));
+		const run_search = untrack(() => search);
+		const limit = untrack(() => max_results);
+
+		void (async () => {
+			try {
+				const found = await run_search(text, limit);
+				if (request_id === latest_request) results = found;
+			} catch (error) {
+				if (request_id !== latest_request) return;
+				console.error('[COMBOBOX] Search failed:', error);
+				results = [];
+			}
+		})();
 	});
 
 	function select_ids(ids: string[]) {

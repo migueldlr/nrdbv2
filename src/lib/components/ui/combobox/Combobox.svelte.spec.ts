@@ -1,6 +1,6 @@
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Combobox, { type ComboboxItem, type ComboboxSearch } from './Combobox.svelte';
 
 const SURE_GAMBLE = { id: 'sure_gamble', title: 'Sure Gamble' };
@@ -15,21 +15,26 @@ const search_items: ComboboxSearch<ComboboxItem> = (query) =>
 
 interface RenderOptions {
 	value?: ComboboxItem[];
+	search?: ComboboxSearch<ComboboxItem>;
 }
 
 async function render_combobox(options: RenderOptions = {}) {
 	const onchange = vi.fn();
-	await render(Combobox, {
+	const { rerender } = await render(Combobox, {
 		value: options.value ?? [],
 		onchange,
-		search: search_items,
+		search: options.search ?? search_items,
 		label: 'Contains cards',
 		placeholder: 'Search cards'
 	});
-	return { onchange };
+	return { onchange, rerender };
 }
 
 describe('Combobox', () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
 	it('lists matching items while typing and adds the clicked item to the selection', async () => {
 		const { onchange } = await render_combobox();
 
@@ -78,5 +83,98 @@ describe('Combobox', () => {
 
 		await page.getByRole('combobox', { name: 'Contains cards' }).fill('zzz');
 		await expect.element(page.getByRole('listbox')).not.toBeInTheDocument();
+	});
+
+	it('keeps the previous results visible while a new search is pending', async () => {
+		let resolve_search: (found: ComboboxItem[]) => void = () => {};
+		const search = (query: string) =>
+			query === 'car'
+				? Promise.resolve([CARNIVORE])
+				: new Promise<ComboboxItem[]>((resolve) => (resolve_search = resolve));
+
+		await render_combobox({ search });
+		const input = page.getByRole('combobox', { name: 'Contains cards' });
+
+		await input.fill('car');
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+
+		await input.fill('cook');
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+
+		resolve_search([COOKBOOK]);
+		await expect.element(page.getByRole('option', { name: 'Cookbook' })).toBeVisible();
+	});
+
+	it('keeps the highlight on the same item when new results replace the list', async () => {
+		let resolve_search: (found: ComboboxItem[]) => void = () => {};
+		const search = (query: string) =>
+			query === 'c'
+				? Promise.resolve([CARNIVORE, COOKBOOK])
+				: new Promise<ComboboxItem[]>((resolve) => (resolve_search = resolve));
+
+		await render_combobox({ search });
+		const input = page.getByRole('combobox', { name: 'Contains cards' });
+
+		await input.fill('c');
+		await userEvent.keyboard('{ArrowDown}');
+		await expect
+			.element(page.getByRole('option', { name: 'Cookbook' }))
+			.toHaveAttribute('data-highlighted', '');
+
+		await input.fill('co');
+		resolve_search([COOKBOOK, CONDUIT]);
+		await expect.element(page.getByRole('option', { name: 'Conduit' })).toBeVisible();
+
+		await expect
+			.element(page.getByRole('option', { name: 'Cookbook' }))
+			.toHaveAttribute('data-highlighted', '');
+		await expect
+			.element(page.getByRole('option', { name: 'Conduit' }))
+			.not.toHaveAttribute('data-highlighted', '');
+	});
+
+	it('shows no options and logs when the search fails', async () => {
+		const error_log = vi.spyOn(console, 'error').mockImplementation(() => {});
+		await render_combobox({ search: () => Promise.reject(new Error('search is down')) });
+
+		await page.getByRole('combobox', { name: 'Contains cards' }).fill('car');
+		await vi.waitFor(() => expect(error_log).toHaveBeenCalled());
+		await expect.element(page.getByRole('listbox')).not.toBeInTheDocument();
+	});
+
+	it('searches with the configured limit and ignores a slower earlier response', async () => {
+		let resolve_first: (found: ComboboxItem[]) => void = () => {};
+		const limits: number[] = [];
+		const search = (query: string, limit: number) => {
+			limits.push(limit);
+			return query === 'c'
+				? new Promise<ComboboxItem[]>((resolve) => (resolve_first = resolve))
+				: Promise.resolve([CARNIVORE]);
+		};
+
+		await render_combobox({ search });
+		const input = page.getByRole('combobox', { name: 'Contains cards' });
+		await input.fill('c');
+		await input.fill('car');
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+
+		resolve_first([COOKBOOK]);
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		await expect
+			.element(page.getByRole('option', { name: 'Cookbook' }))
+			.not.toBeInTheDocument();
+		expect(limits).toEqual([10, 10]);
+	});
+
+	it('does not search again when only the search function changes', async () => {
+		const { rerender } = await render_combobox();
+
+		await page.getByRole('combobox', { name: 'Contains cards' }).fill('car');
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+
+		const next_search = vi.fn(search_items);
+		await rerender({ search: next_search });
+		await expect.element(page.getByRole('option', { name: 'Carnivore' })).toBeVisible();
+		expect(next_search).not.toHaveBeenCalled();
 	});
 });
