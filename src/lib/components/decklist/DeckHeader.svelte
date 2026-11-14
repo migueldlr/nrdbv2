@@ -9,11 +9,12 @@
 		identity: Card;
 		name: string;
 		compact?: boolean;
+		title?: Snippet;
 		children?: Snippet;
 		actions?: Snippet;
 	}
 
-	let { identity, name, compact = false, children, actions }: Props = $props();
+	let { identity, name, compact = false, title, children, actions }: Props = $props();
 
 	const faction_id = $derived(identity.attributes.faction_id);
 	const [identity_name, identity_subtitle] = $derived(identity.attributes.title.split(': '));
@@ -42,7 +43,13 @@
 
 		<div class="deck-header__details">
 			<hgroup class="deck-header__heading">
-				<h1 class="deck-header__title">{name}</h1>
+				<h1 class="deck-header__title">
+					{#if title}
+						{@render title()}
+					{:else}
+						{name}
+					{/if}
+				</h1>
 				<p class="deck-header__identity">
 					<Icon name={faction_id} theme={faction_id} />
 					{identity_name}

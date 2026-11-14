@@ -15,7 +15,6 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { closeCardModal, openCardModal } from '$lib/store';
 	import Icon from '$lib/components/Icon.svelte';
-	import CardImage from '../card/CardImage.svelte';
 	import Button from '../ui/Button.svelte';
 	import Toolbar, {
 		type TGroup as ToolbarGroup,
@@ -234,23 +233,7 @@
 
 <div class="builder">
 	<div class="builder__summary">
-		<div class="builder__identity-row">
-			<button
-				type="button"
-				class="builder__identity-card"
-				aria-haspopup="dialog"
-				aria-label={identity.attributes.title}
-				onclick={() => openCardModal(identity)}
-			>
-				<CardImage card={identity} href={null} />
-			</button>
-
-			<div class="builder__identity">
-				<p class="builder__identity-name">{identity.attributes.title}</p>
-
-				<DeckStats stats={deck_stats} />
-			</div>
-		</div>
+		<DeckStats stats={deck_stats} />
 
 		<div class="builder__cards">
 			{#if has_cards}
@@ -356,38 +339,6 @@
 		display: flex;
 		flex-direction: column;
 		max-block-size: calc(100dvh - 9rem);
-	}
-
-	.builder__identity-row {
-		display: flex;
-		align-items: center;
-		gap: 1rem 1.5rem;
-	}
-
-	.builder__identity-card {
-		flex-shrink: 0;
-		inline-size: 6rem;
-		padding: 0;
-		border: 0;
-		border-radius: var(--card-radius);
-		background: transparent;
-		cursor: pointer;
-	}
-
-	.builder__identity-card:focus-visible {
-		outline: 3px solid currentColor;
-		outline-offset: 3px;
-	}
-
-	.builder__identity {
-		display: grid;
-		gap: 0.75rem;
-		min-inline-size: 0;
-	}
-
-	.builder__identity-name {
-		margin: 0;
-		font-weight: var(--font-weight-semibold);
 	}
 
 	.builder__cards {

@@ -10,7 +10,7 @@
 	import { decklistNav, readParams } from '$lib/decklist_params';
 	import IdentityPicker from '$lib/components/decklist/IdentityPicker.svelte';
 	import DecklistBuilder from '$lib/components/decklist/Builder.svelte';
-	import DeckBar from '$lib/components/decklist/DeckBar.svelte';
+	import DeckEditHeader from '$lib/components/decklist/DeckEditHeader.svelte';
 	import type { Card, FactionIds } from '$lib/types';
 
 	interface Props {
@@ -20,6 +20,7 @@
 
 	let { data, form }: Props = $props();
 
+	let name = $state('');
 	let deck = $state<CardSlots>({});
 
 	let catalog = $derived({
@@ -41,36 +42,44 @@
 	);
 </script>
 
-{#if identity}
-	<DeckBar on_change_identity={decklistNav.clearIdentity}>
-		{#snippet actions()}
-			{#if form?.message}
-				<span class="save-error" role="alert">{form.message}</span>
-			{/if}
-			{#if page.data.session}
-				<form method="POST" action="?/save" use:enhance>
-					<input
-						type="hidden"
-						name="draft"
-						value={JSON.stringify({
-							identity_card_id: identity.id,
-							side_id: identity.attributes.side_id,
-							card_slots: deck
-						})}
-					/>
-					<Button type="submit" size="sm">Save</Button>
-				</form>
-			{:else}
-				<Button size="sm" onclick={() => signIn('nsg-keycloak')}>Sign in to save</Button>
-			{/if}
-		{/snippet}
-	</DeckBar>
-{:else}
+{#if !(identity && faction)}
 	<Header title="Build a new deck" subtitle="" />
 {/if}
 
 <Container>
 	{#if identity && faction}
+		<div class="create__header">
+			<DeckEditHeader bind:name {identity}>
+				{#snippet actions()}
+					<Button color="secondary" size="sm" onclick={decklistNav.clearIdentity}>
+						Change identity
+					</Button>
+					{#if form?.message}
+						<span class="save-error" role="alert">{form.message}</span>
+					{/if}
+					{#if page.data.session}
+						<form method="POST" action="?/save" use:enhance>
+							<input
+								type="hidden"
+								name="draft"
+								value={JSON.stringify({
+									name,
+									identity_card_id: identity.id,
+									side_id: identity.attributes.side_id,
+									card_slots: deck
+								})}
+							/>
+							<Button type="submit" size="sm">Save</Button>
+						</form>
+					{:else}
+						<Button size="sm" onclick={() => signIn('nsg-keycloak')}
+							>Sign in to save</Button
+						>
+					{/if}
+				{/snippet}
+			</DeckEditHeader>
+		</div>
+
 		<DecklistBuilder
 			{identity}
 			side_cards={data.side_cards ?? []}
@@ -86,6 +95,10 @@
 </Container>
 
 <style>
+	.create__header {
+		padding-block-start: 1rem;
+	}
+
 	.save-error {
 		color: var(--jinteki);
 		font-size: var(--font-size-sm);

@@ -13,6 +13,7 @@ import type {
 import { cache_guard } from '$lib/server/guard';
 import { fetch_private } from '$lib/server/private_api';
 import { localizeHref } from '$lib/paraglide/runtime';
+import { UNTITLED_DECK } from '$lib/decks';
 
 const IDENTITY_TYPES = ['corp_identity', 'runner_identity'] as const;
 
@@ -66,10 +67,15 @@ export const actions: Actions = {
 	save: async (event) => {
 		let draft;
 		try {
-			const { identity_card_id, side_id, card_slots } = JSON.parse(
+			const { name, identity_card_id, side_id, card_slots } = JSON.parse(
 				String((await event.request.formData()).get('draft'))
 			);
-			draft = { identity_card_id, side_id, card_slots };
+			draft = {
+				name: (typeof name === 'string' && name.trim()) || UNTITLED_DECK,
+				identity_card_id,
+				side_id,
+				card_slots
+			};
 		} catch {
 			return fail(400, { message: 'The deck could not be read.' });
 		}
@@ -84,7 +90,6 @@ export const actions: Actions = {
 						type: 'decks',
 						attributes: {
 							...draft,
-							name: 'Untitled deck',
 							follows_basic_deckbuilding_rules: true,
 							notes: '',
 							tags: []
