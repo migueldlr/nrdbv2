@@ -8,8 +8,9 @@
 	import CardStats from '$lib/components/card/CardStats.svelte';
 	import PrintingSelector from '$lib/components/card/PrintingSelector.svelte';
 	import PrintingCredits from '$lib/components/card/PrintingCredits.svelte';
+	import CardRulings from '$lib/components/card/CardRulings.svelte';
+	import CardReviews from '$lib/components/card/CardReviews.svelte';
 	import { getCardModalStats } from '$lib/components/card/modal-stats';
-	import Review from '$lib/components/review/Item.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { card_types, card_sub_types } from '$lib/i18n';
 	import { localizeHref } from '$lib/paraglide/runtime';
@@ -19,8 +20,6 @@
 	import Container from '$lib/components/Container.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { next, previous } from '$lib/paraglide/messages';
-	import Ghost from '$lib/components/Ghost.svelte';
-	import RulingItem from '$lib/components/Ruling.svelte';
 	import HeaderImage from '$lib/components/HeaderImage.svelte';
 
 	interface Props {
@@ -195,50 +194,8 @@
 				</div>
 			</div>
 
-			<div style="display: grid; gap: 1rem;">
-				<!-- RULINGS -->
-				{#await data.rulings}
-					<Ghost />
-				{:then rulings}
-					<!-- <pre>{JSON.stringify(rulings, null, 2)}</pre> -->
-					<div class="box rulings">
-						<!-- TODO: i18n value for header -->
-						<h2>Rulings</h2>
-						{#if rulings.length > 0}
-							<ul>
-								{#each rulings as ruling (ruling.id)}
-									<RulingItem data={ruling} />
-								{/each}
-							</ul>
-						{:else}
-							<p>No rulings found for this card.</p>
-						{/if}
-					</div>
-				{:catch error}
-					<p>error loading rulings: {error.message}</p>
-				{/await}
-
-				<!-- REVIEWS -->
-				{#await data.reviews}
-					Loading reviews...
-				{:then reviews}
-					<div class="box reviews">
-						<h2>Reviews</h2>
-						{#each reviews as review (review.id)}
-							<Review {review} />
-						{/each}
-					</div>
-				{:catch error}
-					<p>error loading comments: {error.message}</p>
-				{/await}
-
-				<!-- <pre>{JSON.stringify(data.card, null, 2)}</pre>
-    
-            prev:
-            <pre>{JSON.stringify(data.card_prev, null, 2)}</pre>
-            next:
-            <pre>{JSON.stringify(data.card_next, null, 2)}</pre> -->
-			</div>
+			<CardRulings rulings={data.rulings} />
+			<CardReviews reviews={data.reviews} />
 		</div>
 	</div>
 </Container>
@@ -246,7 +203,6 @@
 <HeaderImage card={data.card} />
 
 <style>
-	/* Temporary styles */
 	.card-page {
 		display: grid;
 		grid-template-columns: 340px minmax(0, 1fr);
@@ -356,17 +312,6 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: var(--space-2) var(--space-3);
-	}
-
-	.reviews {
-		display: grid;
-		gap: var(--space-4);
-	}
-
-	.box {
-		padding: 2rem;
-		border-radius: 0.5rem;
-		background-color: var(--foreground);
 	}
 
 	@media (max-width: 900px) {

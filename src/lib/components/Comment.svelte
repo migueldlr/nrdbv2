@@ -11,22 +11,35 @@
 </script>
 
 <li data-id="comment" class="comment">
-	<p>{comment.body}</p>
-	<div>
-		<small>
-			By <a href={localizeHref(`/profile/${comment.user}`)}>{comment.user}</a>
-			<time datetime={comment.created_at}>{format_date(comment.created_at)}</time>
-			(updated: {format_date(comment.updated_at)})
-		</small>
+	<div class="comment__meta">
+		<a class="comment__author" href={localizeHref(`/profile/${comment.user}`)}>{comment.user}</a
+		>
+		<time datetime={comment.created_at}>{format_date(comment.created_at)}</time>
 	</div>
+	<p class="comment__body">{comment.body}</p>
 </li>
 
 <style>
-	/* Temporary styles */
 	.comment {
-		border-left: 2px solid var(--border);
-		border-bottom: 2px solid var(--border);
-		padding-left: 1rem;
-		padding-bottom: 1rem;
+		display: grid;
+		gap: var(--space-1);
+		font-size: var(--font-size-sm);
+	}
+
+	.comment__meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-1) var(--space-3);
+		color: var(--text-muted);
+	}
+
+	.comment__author {
+		font-weight: var(--font-weight-bold);
+		color: var(--text);
+		text-decoration: none;
+	}
+
+	.comment__body {
+		margin: 0;
 	}
 </style>
