@@ -9,8 +9,8 @@
 	import PrintingSelector from '$lib/components/card/PrintingSelector.svelte';
 	import PrintingCredits from '$lib/components/card/PrintingCredits.svelte';
 	import CardRulings from '$lib/components/card/CardRulings.svelte';
+	import CardReviews from '$lib/components/card/CardReviews.svelte';
 	import { getCardModalStats } from '$lib/components/card/modal-stats';
-	import Review from '$lib/components/review/Item.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { card_types, card_sub_types } from '$lib/i18n';
 	import { localizeHref } from '$lib/paraglide/runtime';
@@ -195,29 +195,7 @@
 			</div>
 
 			<CardRulings rulings={data.rulings} />
-
-			<div style="display: grid; gap: 1rem;">
-				<!-- REVIEWS -->
-				{#await data.reviews}
-					Loading reviews...
-				{:then reviews}
-					<div class="box reviews">
-						<h2>Reviews</h2>
-						{#each reviews as review (review.id)}
-							<Review {review} />
-						{/each}
-					</div>
-				{:catch error}
-					<p>error loading comments: {error.message}</p>
-				{/await}
-
-				<!-- <pre>{JSON.stringify(data.card, null, 2)}</pre>
-    
-            prev:
-            <pre>{JSON.stringify(data.card_prev, null, 2)}</pre>
-            next:
-            <pre>{JSON.stringify(data.card_next, null, 2)}</pre> -->
-			</div>
+			<CardReviews reviews={data.reviews} />
 		</div>
 	</div>
 </Container>
@@ -225,7 +203,6 @@
 <HeaderImage card={data.card} />
 
 <style>
-	/* Temporary styles */
 	.card-page {
 		display: grid;
 		grid-template-columns: 340px minmax(0, 1fr);
@@ -335,17 +312,6 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: var(--space-2) var(--space-3);
-	}
-
-	.reviews {
-		display: grid;
-		gap: var(--space-4);
-	}
-
-	.box {
-		padding: 2rem;
-		border-radius: 0.5rem;
-		background-color: var(--foreground);
 	}
 
 	@media (max-width: 900px) {

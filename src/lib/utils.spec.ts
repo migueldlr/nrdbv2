@@ -1,6 +1,7 @@
 import { describe, it, expect /* vi */ } from 'vitest';
 import {
 	getHighResImage,
+	format_relative_time,
 	export_format,
 	group_cards_by_type,
 	/* print, download_file, */ validate_markdown
@@ -159,3 +160,20 @@ describe('download_file', () => {
     });
 });
 */
+
+describe('format_relative_time', () => {
+	const now = Date.parse('2026-11-19T12:00:00Z');
+
+	it.each([
+		['2026-11-19T12:00:00Z', 'now'],
+		['2026-11-19T11:59:50Z', '10 seconds ago'],
+		['2026-11-19T11:55:00Z', '5 minutes ago'],
+		['2026-11-19T09:00:00Z', '3 hours ago'],
+		['2026-11-18T12:00:00Z', 'yesterday'],
+		['2026-10-01T12:00:00Z', 'last month'],
+		['2026-03-01T12:00:00Z', '8 months ago'],
+		['2022-07-29T12:00:00Z', '4 years ago']
+	])('formats %s as "%s"', (iso, expected) => {
+		expect(format_relative_time(iso, now, 'en')).toBe(expected);
+	});
+});

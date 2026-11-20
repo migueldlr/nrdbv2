@@ -8,6 +8,7 @@ import type {
 } from '$lib/types';
 
 import { CARD_TYPE_ORDER, NRDB_API_URL } from '$lib/constants';
+import { getLocale } from '$lib/paraglide/runtime';
 
 export const isCurrentPath = (pathname: string, url: string): boolean => {
 	const normalize = (path: string) => path.replace(/\/$/, '') || '/';
@@ -103,6 +104,24 @@ export const format_date = (iso: string, options?: Intl.DateTimeFormatOptions) =
 		// second: 'numeric'
 		...options
 	});
+};
+
+const RELATIVE_UNITS: [limit: number, unit: Intl.RelativeTimeFormatUnit, ms: number][] = [
+	[60_000, 'second', 1000],
+	[3_600_000, 'minute', 60_000],
+	[86_400_000, 'hour', 3_600_000],
+	[30 * 86_400_000, 'day', 86_400_000],
+	[365 * 86_400_000, 'month', 30 * 86_400_000],
+	[Infinity, 'year', 365 * 86_400_000]
+];
+
+export const format_relative_time = (iso: string, now = Date.now(), locale = getLocale()) => {
+	const elapsed = Math.max(0, now - Date.parse(iso));
+	const [, unit, ms] = RELATIVE_UNITS.find(([limit]) => elapsed < limit)!;
+	return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+		-Math.floor(elapsed / ms),
+		unit
+	);
 };
 
 export const print = () => {
